@@ -1,0 +1,3 @@
+#header {
+  background: linear-gradient(to bottom, oklch(var(--n)), oklch(var(--b1)));
+}

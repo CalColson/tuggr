@@ -20,11 +20,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+
+
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider />
-        {children}
+        <AuthProvider>
+          {/* important to know that the padding-top matches the height of the header */}
+          <div className='h-screen pt-12'>{children}</div>
+        </AuthProvider>
       </body>
     </html>
   )

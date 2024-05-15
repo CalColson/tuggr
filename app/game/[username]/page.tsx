@@ -39,7 +39,7 @@ function Game({ params }: { params: { username: string } }) {
   }, [])
 
   return (
-    <div id="game">
+    <div id="game" className='flex flex-col justify-center items-center h-full'>
       <h3 className="text-3xl mb-16">{!opponentConnected ? WAITING_STRING + ellipsisAnimation : underscoreAnimation}</h3>
       <TugBar />
     </div>
