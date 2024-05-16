@@ -6,9 +6,6 @@ import RightSide from './RightSide/RightSide'
 import { AuthContext } from '@/app/auth/AuthProvider'
 
 const Header = () => {
-  const { user } = React.useContext(AuthContext)
-
-  console.log(user)
   return (
     <header id='header' className='fixed w-screen h-12'>
       <div className='flex justify-between h-full shadow-2xl px-4'>
@@ -17,7 +14,7 @@ const Header = () => {
           <div>about</div>
           <div>contact</div>
         </div>
-        <RightSide user={user} />
+        <RightSide />
       </div>
     </header>
   )
