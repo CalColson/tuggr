@@ -3,6 +3,7 @@
 import { AuthContext } from '@/app/auth/AuthProvider'
 import { createClient } from '@/utils/supabase/client'
 import Avatar from 'boring-avatars'
+import Link from 'next/link'
 import { useContext } from 'react'
 
 const RightSide = () => {
@@ -30,8 +31,8 @@ const RightSide = () => {
   } else {
     content = (
       <div className='flex items-center gap-12'>
-        <div>login</div>
-        <div>sign up</div>
+        <Link href='/'>login</Link>
+        <Link href='/'>sign up</Link>
       </div>
     )
   }

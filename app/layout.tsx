@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           {/* important to know that the padding-top matches the height of the header */}
-          <div className='h-screen pt-12'>{children}</div>
+          <div className='h-screen pt-16'>{children}</div>
         </AuthProvider>
       </body>
     </html>

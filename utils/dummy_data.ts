@@ -1,9 +1,6 @@
-interface DummyUser {
-  username: string,
-  rating: number,
-  time: number
-}
-export const dummyUsers: DummyUser[] =
+import { GameListGame } from '@/app/types/GameListTypes'
+
+export const dummyGameListGames: GameListGame[] =
   [
     {
       username: 'cosmosis',
