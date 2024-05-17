@@ -1,8 +1,11 @@
+import { AuthContext } from '@/app/auth/AuthProvider'
 import socket from '@/app/socket'
 import { HostGameArgs } from '@/app/types/HostGameArgs'
-import React, { useEffect, useRef } from 'react'
+import React, { useContext, useEffect, useRef } from 'react'
 
 const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
+  const { user } = useContext(AuthContext)
+  user?.user_metadata
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -18,16 +21,12 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
     modal.close()
   }
 
-  const hostGameArgs: HostGameArgs = {
-    hostId: '123',
-    timeControl: 30,
-  }
   function handleConfirm() {
+    const hostGameArgs: HostGameArgs = {
+      hostDisplayName: user?.user_metadata.display_name as string,
+      timeControl: parseInt((document.getElementById('host-time-control') as HTMLSelectElement).value)
+    }
     socket.emit('host-game', hostGameArgs)
-
-    // TODO: make sure the game was successfully hosted before closing the modal... this will be moved
-    // const modal = document.getElementById(props.id) as HTMLDialogElement
-    // modal.close()
   }
 
   return (

@@ -1,4 +1,4 @@
 export interface HostGameArgs {
-  hostId: string,
+  hostDisplayName: string,
   timeControl: number
 }

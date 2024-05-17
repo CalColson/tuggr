@@ -6,10 +6,11 @@ import { User } from '@supabase/supabase-js'
 import Header from '@/components/Header/Header'
 import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator'
 import socket from '../socket'
+import { AuthUser } from '../types/AuthUser'
 
 export const AuthContext = createContext<{
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
 }>({
   user: null,
   setUser: () => { },
@@ -20,7 +21,7 @@ const AuthProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
 
   // this prevents the useEffect from running more than once in strict mode (dev env)
   const hasRun = useRef(false)
@@ -42,11 +43,11 @@ const AuthProvider = ({
             }
           }).then((res) => {
             console.log(`user ${res.data.user?.id} signed in anonymously`)
-            setUser(res.data.user)
+            setUser(res.data.user as AuthUser)
           })
         } else {
           console.log(`user ${res.data.user?.id} found`)
-          setUser(res.data.user)
+          setUser(res.data.user as AuthUser)
         }
       })
       hasRun.current = true

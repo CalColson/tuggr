@@ -1,6 +1,8 @@
 import { createServer } from 'node:http'
 import next from 'next'
 import { Server } from 'socket.io'
+import { GameListGame } from './app/types/GameListTypes'
+import { HostGameArgs } from './app/types/HostGameArgs'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -14,13 +16,33 @@ app.prepare().then(() => {
   const io = new Server(httpServer)
 
   // in-memory store for games
-  const games = []
+  let games: GameListGame[] = []
+  const DEFAULT_RATING = 1000
 
   io.on('connection', (socket) => {
     console.log(socket.id + ' connected')
 
-    socket.on('host-game', (hostGameArgs: number) => {
-      // TODO: implement
+    socket.on('get-games', () => {
+      io.emit('games-sent', games)
+    })
+
+    socket.on('host-game', (hostGameArgs: HostGameArgs) => {
+      console.log(socket.id + ' hosted game with args:')
+      console.dir(hostGameArgs)
+
+      const game: GameListGame = {
+        username: hostGameArgs.hostDisplayName,
+        rating: DEFAULT_RATING,
+        time: hostGameArgs.timeControl
+      }
+      if (!games.some(g => g.username === game.username)) games.unshift(game)
+      else {
+        const newGames = games.filter(g => g.username !== game.username)
+        newGames.unshift(game)
+        games = newGames
+      }
+
+      io.emit('game-hosted', games)
     })
     socket.on('join-game', (gameId) => {
       console.log(socket.id + ' joined game ' + gameId + '(not really)')

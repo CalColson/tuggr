@@ -11,8 +11,11 @@ import HostGameModal from './HostGameModal'
 const GameList = () => {
   const [innerWidth, setInnerWidth] = useState(0)
   const [isScrollVisible, setIsScrollVisible] = useState(false)
+
   // const games = dummyGameListGames
-  const games: GameListGame[] = []
+  const [games, setGames] = useState<GameListGame[]>([])
+
+  const MODAL_ID = 'host-game-modal'
 
   function handleJoinGame(id: string) {
     // TODO: handle joining a game
@@ -25,7 +28,6 @@ const GameList = () => {
 
   // used to check if scrollbar is visible in useEffect and also when adding/subtracting new games
   const onResize = () => {
-    console.log('resize occurred')
     setInnerWidth(window.innerWidth)
   }
   useEffect(() => {
@@ -42,10 +44,27 @@ const GameList = () => {
       window.removeEventListener('resize', onResize)
     }
   }, [innerWidth])
+  useEffect(() => {
+
+    function handleGameHosted(newGames: GameListGame[]) {
+      setGames(newGames)
+      const modal = document.getElementById(MODAL_ID) as HTMLDialogElement
+      modal.close()
+    }
+
+    socket.on('games-sent', setGames)
+    socket.on('game-hosted', handleGameHosted)
+
+    socket.emit('get-games')
+    return () => {
+      socket.off('games-sent', setGames)
+      socket.off('game-hosted', handleGameHosted)
+    }
+  }, [])
 
   return (
     <>
-      <HostGameModal id={'host-game-modal'} onModalClose={onResize} />
+      <HostGameModal id={MODAL_ID} onModalClose={onResize} />
       <div id='game-list' className={'flex-1 px-8 overflow-auto' + (isScrollVisible ? '' : ' border-r')}>
         <h1 className="text-2xl text-center border-b">available games:</h1>
         <table className='min-w-full text-left'>
