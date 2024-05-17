@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.js",
-    "build": "next build",
-    "start": "NODE_ENV=production node server.js"
+    "dev": "nodemon --exec 'node --loader ts-node/esm' server.ts",
+    "build": "next build && npx tsc server.ts --esModuleInterop true --moduleResolution node --skipLibCheck true && mv server.js server.cjs",
+    "start": "NODE_ENV=production node server.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "latest",
@@ -25,12 +25,13 @@
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
-    "@types/node": "20.11.5",
+    "@types/node": "^20.11.5",
     "@types/react": "18.2.48",
     "@types/react-dom": "18.2.18",
     "daisyui": "^4.11.1",
     "encoding": "^0.1.13",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.3"
+    "eslint-config-next": "^14.2.3",
+    "ts-node": "^10.9.2"
   }
 }

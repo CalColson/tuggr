@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import TugBar from '@/components/TugBar/TugBar'
-import socket from '@/app/socket'
-
 import '../Game.css'
 
 function Game({ params }: { params: { username: string } }) {
@@ -16,8 +14,6 @@ function Game({ params }: { params: { username: string } }) {
   const WAITING_STRING = 'Waiting for connection'
 
   useEffect(() => {
-    socket
-
     // setup ellipsis animation
     const ellipsisInterval = setInterval(() => {
       setEllipsisAnimation((prev) => {

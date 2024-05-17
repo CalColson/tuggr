@@ -15,6 +15,7 @@ const GameList = () => {
   const games: GameListGame[] = []
 
   function handleJoinGame(id: string) {
+    // TODO: handle joining a game
     socket.emit('join-game', id)
   }
   function handleHostGame() {

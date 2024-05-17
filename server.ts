@@ -19,6 +19,9 @@ app.prepare().then(() => {
   io.on('connection', (socket) => {
     console.log(socket.id + ' connected')
 
+    socket.on('host-game', (hostGameArgs: number) => {
+      // TODO: implement
+    })
     socket.on('join-game', (gameId) => {
       console.log(socket.id + ' joined game ' + gameId + '(not really)')
       // socket.join(gameId)

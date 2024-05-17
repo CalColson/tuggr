@@ -1,3 +1,5 @@
+import socket from '@/app/socket'
+import { HostGameArgs } from '@/app/types/HostGameArgs'
 import React, { useEffect, useRef } from 'react'
 
 const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
@@ -15,12 +17,17 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
     const modal = document.getElementById(props.id) as HTMLDialogElement
     modal.close()
   }
+
+  const hostGameArgs: HostGameArgs = {
+    hostId: '123',
+    timeControl: 30,
+  }
   function handleConfirm() {
-    // TODO: implement with server and socket.io
+    socket.emit('host-game', hostGameArgs)
 
-
-    const modal = document.getElementById(props.id) as HTMLDialogElement
-    modal.close()
+    // TODO: make sure the game was successfully hosted before closing the modal... this will be moved
+    // const modal = document.getElementById(props.id) as HTMLDialogElement
+    // modal.close()
   }
 
   return (
@@ -39,7 +46,7 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
           </select>
         </div>
         <div className='flex w-full justify-around'>
-          <button className='btn btn-success'>host</button>
+          <button onClick={handleConfirm} className='btn btn-success'>host</button>
           <button onClick={handleCancel} className='btn btn-error'>cancel</button>
         </div>
       </div>
