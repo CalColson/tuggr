@@ -1,4 +1,5 @@
 import { AuthContext } from '@/app/auth/AuthProvider'
+import signals from '@/app/constants/strings/signals'
 import socket from '@/app/socket'
 import { HostGameArgs } from '@/app/types/HostGameArgs'
 import React, { useContext, useEffect, useRef } from 'react'
@@ -26,7 +27,7 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
       hostDisplayName: user?.user_metadata.display_name as string,
       timeControl: parseInt((document.getElementById('host-time-control') as HTMLSelectElement).value)
     }
-    socket.emit('host-game', hostGameArgs)
+    socket.emit(signals.client.hostGame, hostGameArgs)
   }
 
   return (

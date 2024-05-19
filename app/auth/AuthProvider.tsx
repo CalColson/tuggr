@@ -2,7 +2,6 @@
 
 import { createContext, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { User } from '@supabase/supabase-js'
 import Header from '@/components/Header/Header'
 import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator'
 import socket from '../socket'

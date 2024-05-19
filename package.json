@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec 'node --loader ts-node/esm' server.ts",
+    "dev": "nodemon --no-warnings --exec 'node --loader ts-node/esm' server.ts",
     "build": "next build && npx tsc server.ts --esModuleInterop true --moduleResolution node --skipLibCheck true && mv server.js server.cjs",
     "start": "NODE_ENV=production node server.cjs"
   },

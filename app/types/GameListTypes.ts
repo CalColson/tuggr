@@ -1,5 +1,7 @@
 export interface GameListGame {
-  username: string,
+  hostUsername: string,
+  hostSocketId: string,
   rating: number,
-  time: number
+  time: number,
+  isInProgress: boolean
 }

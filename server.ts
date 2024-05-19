@@ -3,6 +3,8 @@ import next from 'next'
 import { Server } from 'socket.io'
 import { GameListGame } from './app/types/GameListTypes'
 import { HostGameArgs } from './app/types/HostGameArgs'
+// js extension is required for ts-node/esm to work
+import signals from './app/constants/strings/signals.js'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -18,38 +20,64 @@ app.prepare().then(() => {
   // in-memory store for games
   let games: GameListGame[] = []
   const DEFAULT_RATING = 1000
+  function getOpenGames() {
+    return games.filter(g => !g.isInProgress)
+  }
 
   io.on('connection', (socket) => {
     console.log(socket.id + ' connected')
 
-    socket.on('get-games', () => {
-      io.emit('games-sent', games)
+    socket.on(signals.client.getGames, () => {
+      io.emit(signals.server.gamesSent, getOpenGames())
     })
 
-    socket.on('host-game', (hostGameArgs: HostGameArgs) => {
+    socket.on(signals.client.hostGame, (hostGameArgs: HostGameArgs) => {
       console.log(socket.id + ' hosted game with args:')
       console.dir(hostGameArgs)
 
       const game: GameListGame = {
-        username: hostGameArgs.hostDisplayName,
+        hostUsername: hostGameArgs.hostDisplayName,
+        hostSocketId: socket.id,
         rating: DEFAULT_RATING,
-        time: hostGameArgs.timeControl
+        time: hostGameArgs.timeControl,
+        isInProgress: false,
       }
-      if (!games.some(g => g.username === game.username)) games.unshift(game)
+      if (!games.some(g => g.hostUsername === game.hostUsername)) games.unshift(game)
       else {
-        const newGames = games.filter(g => g.username !== game.username)
+        const newGames = games.filter(g => g.hostUsername !== game.hostUsername)
         newGames.unshift(game)
         games = newGames
       }
 
-      io.emit('game-hosted', games)
-    })
-    socket.on('join-game', (gameId) => {
-      console.log(socket.id + ' joined game ' + gameId + '(not really)')
-      // socket.join(gameId)
+      socket.join(game.hostUsername)
+      io.emit(signals.server.gameHosted, getOpenGames())
     })
 
+    socket.on(signals.client.deleteHostedGame, (username) => {
+      console.log(socket.id + ' deleted hosted game')
+      games = games.filter(game => game.hostUsername !== username)
+      io.emit(signals.server.gamesSent, getOpenGames())
+    })
+
+    socket.on(signals.client.joinGame, (hostUsername) => {
+      socket.join(hostUsername)
+      // console.log(io.sockets.adapter.rooms.get(hostUsername))
+      const game = games.find(g => g.hostUsername === hostUsername)
+      if (game) game.isInProgress = true
+      io.emit(signals.server.gamesSent, getOpenGames())
+      io.to(hostUsername).emit(signals.server.gameJoined, game)
+    })
+
+    socket.on(signals.client.ensureGameJoined, (hostUsername) => {
+      socket.join(hostUsername)
+      console.log(io.sockets.adapter.rooms.get(hostUsername))
+    })
+
+    socket.on('disconnecting', () => {
+      // can still access the socket.rooms property here
+    })
     socket.on('disconnect', () => {
+      // can't access the socket.rooms property here (the rooms have been left already)
       console.log(socket.id + ' disconnected')
     })
   })

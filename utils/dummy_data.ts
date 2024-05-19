@@ -3,68 +3,94 @@ import { GameListGame } from '@/app/types/GameListTypes'
 export const dummyGameListGames: GameListGame[] =
   [
     {
-      username: 'cosmosis',
+      hostUsername: 'cosmosis',
+      hostSocketId: '1234',
       rating: 1000,
-      time: 30
+      time: 30,
+      isInProgress: false,
     },
     {
-      username: 'denizen_don',
+      hostUsername: 'denizen_don',
+      hostSocketId: '1234',
       rating: 1300,
-      time: 15
+      time: 15,
+      isInProgress: false,
     },
     {
-      username: 'romantic_rain',
+      hostUsername: 'romantic_rain',
+      hostSocketId: '1234',
       rating: 800,
-      time: 30
+      time: 30,
+      isInProgress: false,
     },
     {
-      username: 'billiam',
+      hostUsername: 'billiam',
+      hostSocketId: '1234',
       rating: 900,
-      time: 20
+      time: 20,
+      isInProgress: false,
     },
     {
-      username: 'rondosis',
+      hostUsername: 'rondosis',
+      hostSocketId: '1234',
       rating: 1100,
-      time: 25
+      time: 25,
+      isInProgress: false,
     },
     {
-      username: 'quazzyqua',
+      hostUsername: 'quazzyqua',
+      hostSocketId: '1234',
       rating: 1200,
-      time: 35
+      time: 35,
+      isInProgress: false,
     },
     {
-      username: 'timbers',
+      hostUsername: 'timbers',
+      hostSocketId: '1234',
       rating: 950,
-      time: 40
+      time: 40,
+      isInProgress: false,
     },
-    // {
-    //   username: 'tropical_trey',
-    //   rating: 1050,
-    //   time: 10
-    // },
-    // {
-    //   username: 'twizzler',
-    //   rating: 1400,
-    //   time: 50
-    // },
-    // {
-    //   username: 'fonkrow',
-    //   rating: 850,
-    //   time: 20
-    // },
-    // {
-    //   username: 'finchma',
-    //   rating: 950,
-    //   time: 15
-    // },
-    // {
-    //   username: 'scrazzle',
-    //   rating: 1200,
-    //   time: 25
-    // },
-    // {
-    //   username: 'mbongogon',
-    //   rating: 800,
-    //   time: 35
-    // },
+    {
+      hostUsername: 'tropical_trey',
+      hostSocketId: '1234',
+      rating: 1050,
+      time: 10,
+      isInProgress: false,
+    },
+    {
+      hostUsername: 'twizzler',
+      hostSocketId: '1234',
+      rating: 1400,
+      time: 50,
+      isInProgress: false,
+    },
+    {
+      hostUsername: 'fonkrow',
+      hostSocketId: '1234',
+      rating: 850,
+      time: 20,
+      isInProgress: false,
+    },
+    {
+      hostUsername: 'finchma',
+      hostSocketId: '1234',
+      rating: 950,
+      time: 15,
+      isInProgress: false,
+    },
+    {
+      hostUsername: 'scrazzle',
+      hostSocketId: '1234',
+      rating: 1200,
+      time: 25,
+      isInProgress: false,
+    },
+    {
+      hostUsername: 'mbongogon',
+      hostSocketId: '1234',
+      rating: 800,
+      time: 35,
+      isInProgress: false,
+    },
   ]
