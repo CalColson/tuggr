@@ -13,7 +13,7 @@ const TugBar = ({ timeControl, blueTime }: { timeControl: string | null, blueTim
   return (
     <div id="tug-bar" className="w-3/4">
       <div id="tug-timers" className="flex justify-around mb-3">
-        <div className="text-3xl">{blueTime.toFixed(1)}</div>
+        <div className="text-3xl">{Math.abs(blueTime).toFixed(1)}</div>
         <div className="text-3xl">{(totalTime - blueTime).toFixed(1)}</div>
       </div>
       <div id="tug-bar-bar">

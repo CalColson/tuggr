@@ -17,6 +17,7 @@ const signals = {
     gameJoined: 'game-joined',
     wordUpdated: 'word-updated',
     timeUpdated: 'time-updated',
+    penaltyEnded: 'penalty-ended',
   }
 }
 

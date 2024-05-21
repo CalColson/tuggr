@@ -5,6 +5,7 @@ import { GameListGame } from './app/types/GameListTypes'
 import { HostGameArgs } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
+import { getWordList } from './utils/fileHandler.js'
 
 // remember to remove this
 const TEST_GAME: GameListGame = {
@@ -15,6 +16,7 @@ const TEST_GAME: GameListGame = {
   hasGameStarted: false,
   currentWord: '',
   isHostsTurn: true,
+  isBeingPenalized: false,
   hostTime: 30,
   timerInterval: null,
   lastTimeUpdateTimestamp: 0
@@ -23,6 +25,8 @@ const TEST_GAME: GameListGame = {
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = 3000
+
+const wordList = getWordList()
 
 const app = next({ dev, hostname, port })
 const handler = app.getRequestHandler()
@@ -34,7 +38,11 @@ app.prepare().then(() => {
   // in-memory store for games
   let games: GameListGame[] = [TEST_GAME]
   const DEFAULT_RATING = 1000
-  // TODO: clear timer interval when game ends (or closes)
+  // the fraction of the time control to penalize the player by for an invalid word
+  // e.g. a value of 6 means the player will lose 1/6 of their starting time for an invalid word
+  const DEFAULT_PENALTY = 6
+  // the time in seconds to freeze the game for after a penalty
+  const DEFAULT_PENALTY_FREEZE_TIME = 1
 
   function getOpenGames() {
     return games.filter(g => !g.isInProgress)
@@ -59,6 +67,7 @@ app.prepare().then(() => {
         hasGameStarted: false,
         currentWord: '',
         isHostsTurn: true,
+        isBeingPenalized: false,
         hostTime: hostGameArgs.timeControl,
         timerInterval: null,
         lastTimeUpdateTimestamp: 0
@@ -95,7 +104,6 @@ app.prepare().then(() => {
     })
 
     socket.on(signals.client.startGame, () => {
-      // TODO: time update seems stuck on sending 30 nonstop.... fix this
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       if (game?.hasGameStarted) return
       if (game) {
@@ -111,7 +119,13 @@ app.prepare().then(() => {
           else game.hostTime += timeElapsed
           game.lastTimeUpdateTimestamp = currentTime
           if (game.hostTime <= 0 || game.hostTime >= game.time * 2) {
-            if (game.timerInterval) clearInterval(game.timerInterval)
+            if (game.timerInterval) {
+              clearInterval(game.timerInterval)
+              game.timerInterval = null
+              game.hostTime = game.hostTime <= 0 ? 0 : game.time * 2
+              io.to(game.hostUsername).emit(signals.server.timeUpdated, game.hostTime)
+              return
+            }
           }
           // console.log(game.hostTime)
           io.to(game.hostUsername).emit(signals.server.timeUpdated, game.hostTime)
@@ -123,9 +137,27 @@ app.prepare().then(() => {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       // console.log(game)
       if (game) {
+        if (game.isBeingPenalized) return
         game.currentWord += move
-        game.isHostsTurn = !game.isHostsTurn
-        io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn)
+        const possibleWords = getPossibleWords(game.currentWord)
+        // console.log(possibleWords)
+        const isValid = possibleWords.length > 0
+        if (isValid) {
+          // only change turns if the word is valid
+          game.isHostsTurn = !game.isHostsTurn
+        } else {
+          // penalize the player for an invalid word
+          game.isBeingPenalized = true
+          if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
+          else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
+          setTimeout(() => {
+            game.currentWord = ''
+            game.isBeingPenalized = false
+            io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, true)
+            io.to(game.hostUsername).emit(signals.server.penaltyEnded)
+          }, DEFAULT_PENALTY_FREEZE_TIME * 1000)
+        }
+        io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, isValid)
       }
     })
 
@@ -142,3 +174,7 @@ app.prepare().then(() => {
     console.log(`> Ready on http://${hostname}:${port}`)
   })
 })
+
+function getPossibleWords(word: string): string[] {
+  return wordList.filter(w => w.startsWith(word))
+}

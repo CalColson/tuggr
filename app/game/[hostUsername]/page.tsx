@@ -17,6 +17,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
   const { user } = useContext(AuthContext)
   const [isHost, setIsHost] = useState(user?.user_metadata.display_name === params.hostUsername)
   const [isMyTurn, setIsMyTurn] = useState(isHost)
+  const [isBeingPenalized, setIsBeingPenalized] = useState(false)
   const [currentWord, setCurrentWord] = useState('')
 
   const timeControl = useSearchParams().get('time')
@@ -28,7 +29,14 @@ function Game({ params }: { params: { hostUsername: string } }) {
     setIsMyTurn(isHost)
   }, [isHost, params.hostUsername, user])
   useEffect(() => {
-
+    const currentWordElement = document.getElementById('current-word')
+    if (isBeingPenalized) {
+      if (currentWordElement) currentWordElement.classList.add('text-error')
+    } else {
+      if (currentWordElement) currentWordElement.classList.remove('text-error')
+    }
+  }, [isBeingPenalized])
+  useEffect(() => {
     // setup ellipsis animation
     const ellipsisInterval = setInterval(() => {
       setEllipsisAnimation((prev) => {
@@ -45,7 +53,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
     const handleKeyPress = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase()
       if (key.match(/[a-z]/)) {
-        if (isMyTurn) {
+        if (isMyTurn && !isBeingPenalized) {
           if (!hasGameStarted.current) {
             hasGameStarted.current = true
             socket.emit(signals.client.startGame)
@@ -56,10 +64,14 @@ function Game({ params }: { params: { hostUsername: string } }) {
     }
     document.addEventListener('keypress', handleKeyPress)
 
-    socket.on(signals.server.wordUpdated, (word: string, isHostsTurn: boolean) => {
+    socket.on(signals.server.wordUpdated, (word: string, isHostsTurn: boolean, isValid: boolean) => {
+      if (!isValid) setIsBeingPenalized(true)
       setCurrentWord(word)
       if (isHost) setIsMyTurn(isHostsTurn)
       else setIsMyTurn(!isHostsTurn)
+    })
+    socket.on(signals.server.penaltyEnded, () => {
+      setIsBeingPenalized(false)
     })
     socket.on(signals.server.timeUpdated, (time: number) => {
       // console.log('time update: ' + time)
@@ -72,12 +84,12 @@ function Game({ params }: { params: { hostUsername: string } }) {
       document.removeEventListener('keypress', handleKeyPress)
       socket.off(signals.server.wordUpdated)
     }
-  }, [isHost, isMyTurn, params.hostUsername])
+  }, [isBeingPenalized, isHost, isMyTurn, params.hostUsername])
 
   return (
     <div id="game" className='flex flex-col justify-center items-center h-full'>
       <h3 className="text-3xl">{isMyTurn ? gameStrings.YOUR_TURN : gameStrings.OPPONENT_TURN}</h3>
-      <h3 className="text-3xl my-16">{currentWord}
+      <h3 id='current-word' className="text-3xl my-16">{currentWord}
         <span className={`${isUnderscoreTransparent ? 'text-transparent' : ''}`}>{'_'}</span>
       </h3>
       <TugBar timeControl={timeControl} blueTime={blueTime} />

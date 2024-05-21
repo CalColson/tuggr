@@ -8,6 +8,7 @@ export interface GameListGame {
   hasGameStarted: boolean,
   currentWord: string,
   isHostsTurn: boolean,
+  isBeingPenalized: boolean,
   hostTime: number,
   timerInterval: NodeJS.Timeout | null,
   lastTimeUpdateTimestamp: number
