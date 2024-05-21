@@ -31,6 +31,18 @@ const AuthProvider = ({
 
     if (!hasRun.current) {
       const supabase = createClient()
+      supabase.auth.onAuthStateChange((event, session) => {
+        // console.log(event)
+        // console.log(session)
+        if (event === 'SIGNED_IN') {
+          console.log(`user ${session?.user?.id} signed in`)
+          setUser(session?.user as AuthUser)
+        }
+        if (event === 'SIGNED_OUT') {
+          console.log(`user ${session?.user?.id} signed out`)
+          setUser(null)
+        }
+      })
       supabase.auth.getUser().then((res) => {
         if (!res.data.user) {
           const randomName = uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] })
@@ -42,11 +54,7 @@ const AuthProvider = ({
             }
           }).then((res) => {
             console.log(`user ${res.data.user?.id} signed in anonymously`)
-            setUser(res.data.user as AuthUser)
           })
-        } else {
-          console.log(`user ${res.data.user?.id} found`)
-          setUser(res.data.user as AuthUser)
         }
       })
       hasRun.current = true

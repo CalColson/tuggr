@@ -6,6 +6,20 @@ import { HostGameArgs } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
 
+// remember to remove this
+const TEST_GAME: GameListGame = {
+  hostUsername: 'willing_chocolate_locust',
+  rating: 1000,
+  time: 30,
+  isInProgress: true,
+  hasGameStarted: false,
+  currentWord: '',
+  isHostsTurn: true,
+  hostTime: 30,
+  timerInterval: null,
+  lastTimeUpdateTimestamp: 0
+}
+
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = 3000
@@ -18,8 +32,10 @@ app.prepare().then(() => {
   const io = new Server(httpServer)
 
   // in-memory store for games
-  let games: GameListGame[] = []
+  let games: GameListGame[] = [TEST_GAME]
   const DEFAULT_RATING = 1000
+  // TODO: clear timer interval when game ends (or closes)
+
   function getOpenGames() {
     return games.filter(g => !g.isInProgress)
   }
@@ -37,10 +53,15 @@ app.prepare().then(() => {
 
       const game: GameListGame = {
         hostUsername: hostGameArgs.hostDisplayName,
-        hostSocketId: socket.id,
         rating: DEFAULT_RATING,
         time: hostGameArgs.timeControl,
         isInProgress: false,
+        hasGameStarted: false,
+        currentWord: '',
+        isHostsTurn: true,
+        hostTime: hostGameArgs.timeControl,
+        timerInterval: null,
+        lastTimeUpdateTimestamp: 0
       }
       if (!games.some(g => g.hostUsername === game.hostUsername)) games.unshift(game)
       else {
@@ -71,6 +92,41 @@ app.prepare().then(() => {
     socket.on(signals.client.ensureGameJoined, (hostUsername) => {
       socket.join(hostUsername)
       console.log(io.sockets.adapter.rooms.get(hostUsername))
+    })
+
+    socket.on(signals.client.startGame, () => {
+      // TODO: time update seems stuck on sending 30 nonstop.... fix this
+      const game = games.find(g => socket.rooms.has(g.hostUsername))
+      if (game?.hasGameStarted) return
+      if (game) {
+        console.log(socket.id + ' started game')
+        game.hasGameStarted = true
+        game.lastTimeUpdateTimestamp = Date.now()
+        game.timerInterval = setInterval(() => {
+          const currentTime = Date.now()
+          // time elapsed in seconds
+          const timeElapsed = (currentTime - game.lastTimeUpdateTimestamp) / 1000
+          // console.log('time elapsed: ' + timeElapsed)
+          if (game.isHostsTurn) game.hostTime -= timeElapsed
+          else game.hostTime += timeElapsed
+          game.lastTimeUpdateTimestamp = currentTime
+          if (game.hostTime <= 0 || game.hostTime >= game.time * 2) {
+            if (game.timerInterval) clearInterval(game.timerInterval)
+          }
+          // console.log(game.hostTime)
+          io.to(game.hostUsername).emit(signals.server.timeUpdated, game.hostTime)
+        }, 20)
+      }
+    })
+
+    socket.on(signals.client.inputMove, (move) => {
+      const game = games.find(g => socket.rooms.has(g.hostUsername))
+      // console.log(game)
+      if (game) {
+        game.currentWord += move
+        game.isHostsTurn = !game.isHostsTurn
+        io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn)
+      }
     })
 
     socket.on('disconnecting', () => {

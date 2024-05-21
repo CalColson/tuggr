@@ -2,20 +2,10 @@ import { useEffect, useState } from 'react'
 import './TugBar.css'
 import { convertToPercentage } from '@/utils/conversions'
 
-const TugBar = ({ timeControl }: { timeControl: string | null }) => {
+const TugBar = ({ timeControl, blueTime }: { timeControl: string | null, blueTime: number }) => {
   const totalTime = timeControl ? parseInt(timeControl) * 2 : 60
-  const [blueTime, setBlueTime] = useState(totalTime / 2)
   const [blueWidth, setBlueWidth] = useState(convertToPercentage(blueTime / totalTime))
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // setBlueTime()
-    }, 20)
-
-    return () => {
-      clearInterval(timer)
-    }
-  }, [])
   useEffect(() => {
     setBlueWidth(convertToPercentage(blueTime / totalTime))
   }, [blueTime, totalTime])

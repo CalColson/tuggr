@@ -6,6 +6,8 @@ const signals = {
     deleteHostedGame: 'delete-hosted-game',
     joinGame: 'join-game',
     ensureGameJoined: 'ensure-game-joined',
+    startGame: 'start-game',
+    inputMove: 'input-move',
   },
 
   // server-sent signals
@@ -13,6 +15,8 @@ const signals = {
     gamesSent: 'games-sent',
     gameHosted: 'game-hosted',
     gameJoined: 'game-joined',
+    wordUpdated: 'word-updated',
+    timeUpdated: 'time-updated',
   }
 }
 
