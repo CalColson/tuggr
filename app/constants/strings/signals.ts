@@ -8,6 +8,7 @@ const signals = {
     ensureGameJoined: 'ensure-game-joined',
     startGame: 'start-game',
     inputMove: 'input-move',
+    inputWord: 'input-word',
   },
 
   // server-sent signals
@@ -16,8 +17,10 @@ const signals = {
     gameHosted: 'game-hosted',
     gameJoined: 'game-joined',
     wordUpdated: 'word-updated',
-    timeUpdated: 'time-updated',
+    wordAccepted: 'word-accepted',
+    rewardEnded: 'reward-ended',
     penaltyEnded: 'penalty-ended',
+    timeUpdated: 'time-updated',
   }
 }
 

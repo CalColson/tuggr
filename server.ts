@@ -8,19 +8,20 @@ import signals from './app/constants/strings/signals.js'
 import { getWordList } from './utils/fileHandler.js'
 
 // remember to remove this
-const TEST_GAME: GameListGame = {
-  hostUsername: 'willing_chocolate_locust',
-  rating: 1000,
-  time: 30,
-  isInProgress: true,
-  hasGameStarted: false,
-  currentWord: '',
-  isHostsTurn: true,
-  isBeingPenalized: false,
-  hostTime: 30,
-  timerInterval: null,
-  lastTimeUpdateTimestamp: 0
-}
+// const TEST_GAME: GameListGame = {
+//   hostUsername: 'willing_chocolate_locust',
+//   rating: 1000,
+//   time: 30,
+//   isInProgress: true,
+//   hasGameStarted: false,
+//   currentWord: '',
+//   isHostsTurn: true,
+//   isBeingRewarded: false,
+//   isBeingPenalized: false,
+//   hostTime: 30,
+//   timerInterval: null,
+//   lastTimeUpdateTimestamp: 0
+// }
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -36,12 +37,15 @@ app.prepare().then(() => {
   const io = new Server(httpServer)
 
   // in-memory store for games
-  let games: GameListGame[] = [TEST_GAME]
+  // let games: GameListGame[] = [TEST_GAME]
+  let games: GameListGame[] = []
   const DEFAULT_RATING = 1000
-  // the fraction of the time control to penalize the player by for an invalid word
+  // the fraction of the time control to reward/penalize the player for a valid/invalid word
   // e.g. a value of 6 means the player will lose 1/6 of their starting time for an invalid word
+  const DEFAULT_REWARD = 6
   const DEFAULT_PENALTY = 6
-  // the time in seconds to freeze the game for after a penalty
+  // the time in seconds to freeze the game for after a reward/penalty
+  const DEFAULT_REWARD_FREEZE_TIME = 1
   const DEFAULT_PENALTY_FREEZE_TIME = 1
 
   function getOpenGames() {
@@ -67,6 +71,7 @@ app.prepare().then(() => {
         hasGameStarted: false,
         currentWord: '',
         isHostsTurn: true,
+        isBeingRewarded: false,
         isBeingPenalized: false,
         hostTime: hostGameArgs.timeControl,
         timerInterval: null,
@@ -137,7 +142,7 @@ app.prepare().then(() => {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       // console.log(game)
       if (game) {
-        if (game.isBeingPenalized) return
+        if (game.isBeingPenalized || game.isBeingRewarded) return
         game.currentWord += move
         const possibleWords = getPossibleWords(game.currentWord)
         // console.log(possibleWords)
@@ -158,6 +163,41 @@ app.prepare().then(() => {
           }, DEFAULT_PENALTY_FREEZE_TIME * 1000)
         }
         io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, isValid)
+      }
+    })
+
+    socket.on(signals.client.inputWord, () => {
+      const game = games.find(g => socket.rooms.has(g.hostUsername))
+      if (game) {
+        if (game.isBeingPenalized || game.isBeingRewarded) return
+        const isValid = wordList.includes(game.currentWord)
+        if (isValid) {
+          // reward the player for a valid word
+          game.isBeingRewarded = true
+          if (game.isHostsTurn) game.hostTime += (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
+          else game.hostTime -= (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
+
+          io.to(game.hostUsername).emit(signals.server.wordAccepted)
+          setTimeout(() => {
+            game.currentWord = ''
+            game.isBeingRewarded = false
+            io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, true)
+            io.to(game.hostUsername).emit(signals.server.rewardEnded)
+          }, DEFAULT_REWARD_FREEZE_TIME * 1000)
+        } else {
+          // penalize the player for an invalid word
+          game.isBeingPenalized = true
+          if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
+          else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
+          io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false)
+          setTimeout(() => {
+            game.currentWord = ''
+            game.isBeingPenalized = false
+            io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, true)
+            io.to(game.hostUsername).emit(signals.server.penaltyEnded)
+          }, DEFAULT_PENALTY_FREEZE_TIME * 1000)
+
+        }
       }
     })
 
