@@ -21,6 +21,7 @@ const signals = {
     rewardEnded: 'reward-ended',
     penaltyEnded: 'penalty-ended',
     timeUpdated: 'time-updated',
+    gameEnded: 'game-ended',
   }
 }
 

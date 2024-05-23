@@ -11,14 +11,14 @@ import { getWordList } from './utils/fileHandler.js'
 const TEST_GAME: GameListGame = {
   hostUsername: 'apparent_amethyst_walrus',
   rating: 1000,
-  time: 30,
+  time: 5,
   isInProgress: true,
   hasGameStarted: false,
   currentWord: '',
   isHostsTurn: true,
   isBeingRewarded: false,
   isBeingPenalized: false,
-  hostTime: 30,
+  hostTime: 5,
   timerInterval: null,
   lastTimeUpdateTimestamp: 0
 }
@@ -129,6 +129,8 @@ app.prepare().then(() => {
               game.timerInterval = null
               game.hostTime = game.hostTime <= 0 ? 0 : game.time * 2
               io.to(game.hostUsername).emit(signals.server.timeUpdated, game.hostTime)
+              if (game.hostTime <= 0) io.to(game.hostUsername).emit(signals.server.gameEnded, false)
+              else io.to(game.hostUsername).emit(signals.server.gameEnded, true)
               return
             }
           }
@@ -178,7 +180,7 @@ app.prepare().then(() => {
           else game.hostTime -= (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
           game.isHostsTurn = !game.isHostsTurn
 
-          console.log('emitting word accepted')
+          // console.log('emitting word accepted')
           io.to(game.hostUsername).emit(signals.server.wordAccepted)
           setTimeout(() => {
             game.currentWord = ''

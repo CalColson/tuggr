@@ -19,6 +19,8 @@ function Game({ params }: { params: { hostUsername: string } }) {
   const [isBeingPenalized, setIsBeingPenalized] = useState(false)
   const [isBeingRewarded, setIsBeingRewarded] = useState(false)
   const [currentWord, setCurrentWord] = useState('')
+  const [isGameEnded, setIsGameEnded] = useState(false)
+  const [isWinner, setIsWinner] = useState(false)
 
   const timeControl = useSearchParams().get('time')
   const [blueTime, setBlueTime] = useState(timeControl ? parseInt(timeControl) : 69)
@@ -95,6 +97,10 @@ function Game({ params }: { params: { hostUsername: string } }) {
       // console.log('time update: ' + time)
       setBlueTime(time)
     })
+    socket.on(signals.server.gameEnded, (hostWon: boolean) => {
+      if (hostWon && isHost) setIsWinner(true)
+      setIsGameEnded(true)
+    })
 
     return () => {
       clearInterval(ellipsisInterval)
@@ -105,17 +111,30 @@ function Game({ params }: { params: { hostUsername: string } }) {
       socket.off(signals.server.rewardEnded)
       socket.off(signals.server.penaltyEnded)
       socket.off(signals.server.timeUpdated)
+      socket.off(signals.server.gameEnded)
     }
   }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isMyTurn, params.hostUsername])
 
-  return (
-    <div id="game" className='flex flex-col justify-center items-center h-full'>
+
+  const gameContent = (
+    <>
       <h3 className="text-3xl">{isMyTurn ? gameStrings.YOUR_TURN : gameStrings.OPPONENT_TURN}</h3>
       <h3 id='current-word'
         className={'text-3xl my-16 ' + (isBeingRewarded ? 'text-success' : '') +
           (isBeingPenalized ? 'text-error' : '')}>{currentWord}
         <span className={`${isUnderscoreTransparent ? 'text-transparent' : ''}`}>{'_'}</span>
       </h3>
+    </>
+  )
+  const gameOverContent = (
+    <>
+      <h3 className="text-3xl mb-32">{isWinner ? gameStrings.YOU_WON : gameStrings.OPPONENT_WON}</h3>
+    </>
+  )
+
+  return (
+    <div id="game" className='flex flex-col justify-center items-center h-full'>
+      <>{!isGameEnded ? gameContent : gameOverContent}</>
       <TugBar timeControl={timeControl} blueTime={blueTime} />
       <div className='flex w-3/4 justify-between'>
         <h3 className="text-xl">{isHost ? gameStrings.YOUR_NAME : gameStrings.OPPONENT_NAME}</h3>

@@ -43,6 +43,7 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
             <option>20</option>
             <option>15</option>
             <option>10</option>
+            <option>5</option>
           </select>
         </div>
         <div className='flex w-full justify-around'>
