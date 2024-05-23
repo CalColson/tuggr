@@ -8,20 +8,20 @@ import signals from './app/constants/strings/signals.js'
 import { getWordList } from './utils/fileHandler.js'
 
 // remember to remove this
-// const TEST_GAME: GameListGame = {
-//   hostUsername: 'willing_chocolate_locust',
-//   rating: 1000,
-//   time: 30,
-//   isInProgress: true,
-//   hasGameStarted: false,
-//   currentWord: '',
-//   isHostsTurn: true,
-//   isBeingRewarded: false,
-//   isBeingPenalized: false,
-//   hostTime: 30,
-//   timerInterval: null,
-//   lastTimeUpdateTimestamp: 0
-// }
+const TEST_GAME: GameListGame = {
+  hostUsername: 'apparent_amethyst_walrus',
+  rating: 1000,
+  time: 30,
+  isInProgress: true,
+  hasGameStarted: false,
+  currentWord: '',
+  isHostsTurn: true,
+  isBeingRewarded: false,
+  isBeingPenalized: false,
+  hostTime: 30,
+  timerInterval: null,
+  lastTimeUpdateTimestamp: 0
+}
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -37,8 +37,8 @@ app.prepare().then(() => {
   const io = new Server(httpServer)
 
   // in-memory store for games
-  // let games: GameListGame[] = [TEST_GAME]
-  let games: GameListGame[] = []
+  // let games: GameListGame[] = []
+  let games: GameListGame[] = [TEST_GAME]
   const DEFAULT_RATING = 1000
   // the fraction of the time control to reward/penalize the player for a valid/invalid word
   // e.g. a value of 6 means the player will lose 1/6 of their starting time for an invalid word
@@ -176,7 +176,9 @@ app.prepare().then(() => {
           game.isBeingRewarded = true
           if (game.isHostsTurn) game.hostTime += (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
           else game.hostTime -= (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
+          game.isHostsTurn = !game.isHostsTurn
 
+          console.log('emitting word accepted')
           io.to(game.hostUsername).emit(signals.server.wordAccepted)
           setTimeout(() => {
             game.currentWord = ''

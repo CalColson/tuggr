@@ -8,7 +8,6 @@ import gameStrings from '@/app/constants/strings/gameStrings'
 import { useSearchParams } from 'next/navigation'
 import socket from '@/app/socket'
 import signals from '@/app/constants/strings/signals'
-import { time } from 'console'
 
 function Game({ params }: { params: { hostUsername: string } }) {
   const [ellipsisAnimation, setEllipsisAnimation] = useState('...')
@@ -66,12 +65,23 @@ function Game({ params }: { params: { hostUsername: string } }) {
     document.addEventListener('keypress', handleKeyPress)
 
     socket.on(signals.server.wordUpdated, (word: string, isHostsTurn: boolean, isValid: boolean) => {
-      if (!isValid) setIsBeingPenalized(true)
+      if (!isValid) {
+        // console.log('word invalid')
+        new Audio('/sounds/buzzer.mp3').play()
+        setIsBeingPenalized(true)
+      }
+
+      if (word.length === currentWord.length + 1) {
+        // console.log('letter added')
+        new Audio('/sounds/click.mp3').play()
+      }
       setCurrentWord(word)
       if (isHost) setIsMyTurn(isHostsTurn)
       else setIsMyTurn(!isHostsTurn)
     })
     socket.on(signals.server.wordAccepted, () => {
+      // console.log('word accepted')
+      new Audio('/sounds/ding.mp3').play()
       setIsBeingRewarded(true)
     })
     socket.on(signals.server.rewardEnded, () => {
@@ -91,8 +101,12 @@ function Game({ params }: { params: { hostUsername: string } }) {
       clearInterval(underscoreInterval)
       document.removeEventListener('keypress', handleKeyPress)
       socket.off(signals.server.wordUpdated)
+      socket.off(signals.server.wordAccepted)
+      socket.off(signals.server.rewardEnded)
+      socket.off(signals.server.penaltyEnded)
+      socket.off(signals.server.timeUpdated)
     }
-  }, [isBeingPenalized, isBeingRewarded, isHost, isMyTurn, params.hostUsername])
+  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isMyTurn, params.hostUsername])
 
   return (
     <div id="game" className='flex flex-col justify-center items-center h-full'>
