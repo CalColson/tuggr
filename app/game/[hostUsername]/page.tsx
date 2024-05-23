@@ -8,6 +8,7 @@ import gameStrings from '@/app/constants/strings/gameStrings'
 import { useSearchParams } from 'next/navigation'
 import socket from '@/app/socket'
 import signals from '@/app/constants/strings/signals'
+import { GameListGame } from '@/app/types/GameListTypes'
 
 function Game({ params }: { params: { hostUsername: string } }) {
   const [ellipsisAnimation, setEllipsisAnimation] = useState('...')
@@ -21,6 +22,9 @@ function Game({ params }: { params: { hostUsername: string } }) {
   const [currentWord, setCurrentWord] = useState('')
   const [isGameEnded, setIsGameEnded] = useState(false)
   const [isWinner, setIsWinner] = useState(false)
+
+  // state 0: no rematch request, state 1: rematch request sent, state 2: rematch request received
+  const [rematchState, setRematchState] = useState(0)
 
   const timeControl = useSearchParams().get('time')
   const [blueTime, setBlueTime] = useState(timeControl ? parseInt(timeControl) : 69)
@@ -59,7 +63,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
         }
       }
       else if (event.key === 'Enter') {
-        if (isMyTurn) {
+        if (isMyTurn && currentWord.length > 3) {
           socket.emit(signals.client.inputWord)
         }
       }
@@ -98,8 +102,28 @@ function Game({ params }: { params: { hostUsername: string } }) {
       setBlueTime(time)
     })
     socket.on(signals.server.gameEnded, (hostWon: boolean) => {
-      if (hostWon && isHost) setIsWinner(true)
+      if ((hostWon && isHost) || (!hostWon && !isHost)) setIsWinner(true)
+      // console.log(`hostWon: ${hostWon}, isHost: ${isHost}`)
       setIsGameEnded(true)
+    })
+
+    socket.on(signals.server.rematchRequested, () => {
+      const rematchRequestButton = document.getElementById('rematch-request-button')
+      if (rematchRequestButton) rematchRequestButton.classList.add('hidden')
+      const loadingSpinner = document.getElementById('loading-spinner')
+      if (loadingSpinner) loadingSpinner.classList.add('hidden')
+      const rematchAcceptButton = document.getElementById('rematch-accept-button')
+      if (rematchAcceptButton) rematchAcceptButton.classList.remove('hidden')
+    })
+
+    socket.on(signals.server.gameReset, (game: GameListGame) => {
+      setRematchState(0)
+      setIsGameEnded(false)
+      setIsWinner(false)
+      setCurrentWord(game.currentWord)
+      setBlueTime(game.time)
+      setIsMyTurn(isHost ? game.isHostsTurn : !game.isHostsTurn)
+      hasGameStarted.current = false
     })
 
     return () => {
@@ -112,6 +136,8 @@ function Game({ params }: { params: { hostUsername: string } }) {
       socket.off(signals.server.penaltyEnded)
       socket.off(signals.server.timeUpdated)
       socket.off(signals.server.gameEnded)
+      socket.off(signals.server.rematchRequested)
+      socket.off(signals.server.gameReset)
     }
   }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isMyTurn, params.hostUsername])
 
@@ -126,15 +152,51 @@ function Game({ params }: { params: { hostUsername: string } }) {
       </h3>
     </>
   )
+
+  function handleRematchRequest() {
+    setRematchState(1)
+    socket.emit(signals.client.requestRematch)
+
+    const rematchRequestButton = document.getElementById('rematch-request-button')
+    if (rematchRequestButton) rematchRequestButton.classList.add('hidden')
+    const loadingSpinner = document.getElementById('loading-spinner')
+    if (loadingSpinner) loadingSpinner.classList.remove('hidden')
+  }
+  function handleRematchAccept() {
+    setRematchState(0)
+
+    socket.emit(signals.client.acceptRematch)
+  }
+  const rematch0Content = (
+    <button id='rematch-request-button'
+      onClick={handleRematchRequest}
+      className='btn btn-outline btn-secondary my-16'>
+      {gameStrings.REMATCH_REQUEST}
+    </button>
+  )
+  const rematch1Content = (
+    <span id='loading-spinner' className='loading loading-spinner loading-lg my-16 text-secondary hidden'></span>
+  )
+  const rematch2Content = (
+    <button id='rematch-accept-button'
+      onClick={handleRematchAccept}
+      className='btn btn-secondary my-16 hidden'>
+      {gameStrings.REMATCH_ACCEPT}
+    </button>
+  )
   const gameOverContent = (
     <>
-      <h3 className="text-3xl mb-32">{isWinner ? gameStrings.YOU_WON : gameStrings.OPPONENT_WON}</h3>
+      <h3 className="text-3xl">{isWinner ? gameStrings.YOU_WON : gameStrings.OPPONENT_WON}</h3>
+      {rematch0Content}
+      {rematch1Content}
+      {rematch2Content}
     </>
   )
 
+
   return (
     <div id="game" className='flex flex-col justify-center items-center h-full'>
-      <>{!isGameEnded ? gameContent : gameOverContent}</>
+      <>{isGameEnded ? gameOverContent : gameContent}</>
       <TugBar timeControl={timeControl} blueTime={blueTime} />
       <div className='flex w-3/4 justify-between'>
         <h3 className="text-xl">{isHost ? gameStrings.YOUR_NAME : gameStrings.OPPONENT_NAME}</h3>

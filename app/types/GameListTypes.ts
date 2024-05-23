@@ -12,5 +12,6 @@ export interface GameListGame {
   isBeingPenalized: boolean,
   hostTime: number,
   timerInterval: NodeJS.Timeout | null,
-  lastTimeUpdateTimestamp: number
+  lastTimeUpdateTimestamp: number,
+  rematchCount: number,
 }

@@ -5,6 +5,9 @@ const gameStrings = {
   OPPONENT_TURN: 'opponent\'s turn',
   YOU_WON: 'you won!',
   OPPONENT_WON: 'opponent won!',
+
+  REMATCH_REQUEST: 'rematch?',
+  REMATCH_ACCEPT: 'accept rematch?'
 }
 
 export default gameStrings

@@ -9,6 +9,8 @@ const signals = {
     startGame: 'start-game',
     inputMove: 'input-move',
     inputWord: 'input-word',
+    requestRematch: 'request-rematch',
+    acceptRematch: 'accept-rematch',
   },
 
   // server-sent signals
@@ -22,6 +24,8 @@ const signals = {
     penaltyEnded: 'penalty-ended',
     timeUpdated: 'time-updated',
     gameEnded: 'game-ended',
+    rematchRequested: 'rematch-requested',
+    gameReset: 'game-reset',
   }
 }
 

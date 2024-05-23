@@ -20,7 +20,8 @@ const TEST_GAME: GameListGame = {
   isBeingPenalized: false,
   hostTime: 5,
   timerInterval: null,
-  lastTimeUpdateTimestamp: 0
+  lastTimeUpdateTimestamp: 0,
+  rematchCount: 0
 }
 
 const dev = process.env.NODE_ENV !== 'production'
@@ -41,9 +42,9 @@ app.prepare().then(() => {
   let games: GameListGame[] = [TEST_GAME]
   const DEFAULT_RATING = 1000
   // the fraction of the time control to reward/penalize the player for a valid/invalid word
-  // e.g. a value of 6 means the player will lose 1/6 of their starting time for an invalid word
+  // e.g. a value of 3 means the player will lose 1/3 of their starting time for an invalid word
   const DEFAULT_REWARD = 6
-  const DEFAULT_PENALTY = 6
+  const DEFAULT_PENALTY = 3
   // the time in seconds to freeze the game for after a reward/penalty
   const DEFAULT_REWARD_FREEZE_TIME = 1
   const DEFAULT_PENALTY_FREEZE_TIME = 1
@@ -75,7 +76,8 @@ app.prepare().then(() => {
         isBeingPenalized: false,
         hostTime: hostGameArgs.timeControl,
         timerInterval: null,
-        lastTimeUpdateTimestamp: 0
+        lastTimeUpdateTimestamp: 0,
+        rematchCount: 0,
       }
       if (!games.some(g => g.hostUsername === game.hostUsername)) games.unshift(game)
       else {
@@ -171,7 +173,7 @@ app.prepare().then(() => {
     socket.on(signals.client.inputWord, () => {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       if (game) {
-        if (game.isBeingPenalized || game.isBeingRewarded) return
+        if (game.isBeingPenalized || game.isBeingRewarded || game.currentWord.length < 4) return
         const isValid = wordList.includes(game.currentWord)
         if (isValid) {
           // reward the player for a valid word
@@ -191,8 +193,10 @@ app.prepare().then(() => {
         } else {
           // penalize the player for an invalid word
           game.isBeingPenalized = true
+          console.log(`game.hostTime: ${game.hostTime}`)
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
+          console.log(`game.hostTime: ${game.hostTime}`)
           io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false)
           setTimeout(() => {
             game.currentWord = ''
@@ -202,6 +206,34 @@ app.prepare().then(() => {
           }, DEFAULT_PENALTY_FREEZE_TIME * 1000)
 
         }
+      }
+    })
+
+    socket.on(signals.client.requestRematch, () => {
+      const roomName = Array.from(socket.rooms).find(r => r !== socket.id)
+      if (!roomName) return
+
+      const room = io.sockets.adapter.rooms.get(roomName)
+      if (!room) return
+
+      const otherSocketId = Array.from(room).find(id => id !== socket.id)
+      if (!otherSocketId) return
+
+      io.to(otherSocketId).emit(signals.server.rematchRequested)
+    })
+
+    socket.on(signals.client.acceptRematch, () => {
+      const game = games.find(g => socket.rooms.has(g.hostUsername))
+      if (game) {
+        game.rematchCount++
+        game.hasGameStarted = false
+        game.currentWord = ''
+        game.isHostsTurn = game.rematchCount % 2 === 0
+        game.hostTime = game.time
+        game.timerInterval = null
+        game.lastTimeUpdateTimestamp = 0
+
+        io.to(game.hostUsername).emit(signals.server.gameReset, game)
       }
     })
 
