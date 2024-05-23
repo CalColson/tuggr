@@ -7,7 +7,7 @@ const socket = io()
 socket.on('connect', () => {
 
   // used for testing
-  socket.emit(signals.client.ensureGameJoined, 'willing_chocolate_locust')
+  // socket.emit(signals.client.ensureGameJoined, 'willing_chocolate_locust')
 })
 
 export default socket
