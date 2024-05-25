@@ -17,8 +17,9 @@ function Game({ params }: { params: { hostUsername: string } }) {
   const { user } = useContext(AuthContext)
   const [isHost, setIsHost] = useState(user?.user_metadata.display_name === params.hostUsername)
   const [isMyTurn, setIsMyTurn] = useState(isHost)
-  const [isBeingPenalized, setIsBeingPenalized] = useState(false)
+  const [isLockedOut, setIsLockedOut] = useState(false)
   const [isBeingRewarded, setIsBeingRewarded] = useState(false)
+  const [isBeingPenalized, setIsBeingPenalized] = useState(false)
   const [currentWord, setCurrentWord] = useState('')
   const [isGameEnded, setIsGameEnded] = useState(false)
   const [isWinner, setIsWinner] = useState(false)
@@ -49,7 +50,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
     }, 500)
 
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (isBeingPenalized || isBeingRewarded) return
+      if (isBeingPenalized || isBeingRewarded || isLockedOut) return
 
 
       const key = event.key.toLowerCase()
@@ -59,11 +60,14 @@ function Game({ params }: { params: { hostUsername: string } }) {
             hasGameStarted.current = true
             socket.emit(signals.client.startGame)
           }
+
+          setIsLockedOut(true)
           socket.emit(signals.client.inputMove, key)
         }
       }
       else if (event.key === 'Enter') {
         if (isMyTurn && currentWord.length > 3) {
+          setIsLockedOut(true)
           socket.emit(signals.client.inputWord)
         }
       }
@@ -82,6 +86,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
         new Audio('/sounds/click.mp3').play()
       }
       setCurrentWord(word)
+      setIsLockedOut(false)
       if (isHost) setIsMyTurn(isHostsTurn)
       else setIsMyTurn(!isHostsTurn)
     })
@@ -92,7 +97,6 @@ function Game({ params }: { params: { hostUsername: string } }) {
     })
     socket.on(signals.server.rewardEnded, () => {
       setIsBeingRewarded(false)
-      setCurrentWord('')
     })
     socket.on(signals.server.penaltyEnded, () => {
       setIsBeingPenalized(false)
@@ -139,7 +143,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
       socket.off(signals.server.rematchRequested)
       socket.off(signals.server.gameReset)
     }
-  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isMyTurn, params.hostUsername])
+  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isLockedOut, isMyTurn, params.hostUsername])
 
 
   const gameContent = (
