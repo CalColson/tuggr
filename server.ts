@@ -6,6 +6,7 @@ import { HostGameArgs } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
 import { getWordList } from './utils/fileHandler.js'
+import { getRandomArrElement } from './utils/functions.js'
 
 // remember to remove this
 const TEST_GAME: GameListGame = {
@@ -144,6 +145,7 @@ app.prepare().then(() => {
 
     socket.on(signals.client.inputMove, (move) => {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
+      let suggestedWord: string | undefined
       // console.log(game)
       if (game) {
         if (game.isBeingPenalized || game.isBeingRewarded) return
@@ -157,6 +159,7 @@ app.prepare().then(() => {
         } else {
           // penalize the player for an invalid word
           game.isBeingPenalized = true
+          suggestedWord = getRandomArrElement(getPossibleWords(game.currentWord.slice(0, -1)))
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           setTimeout(() => {
@@ -166,7 +169,7 @@ app.prepare().then(() => {
             io.to(game.hostUsername).emit(signals.server.penaltyEnded)
           }, DEFAULT_PENALTY_FREEZE_TIME * 1000)
         }
-        io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, isValid)
+        io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, isValid, suggestedWord)
       }
     })
 
@@ -193,10 +196,10 @@ app.prepare().then(() => {
         } else {
           // penalize the player for an invalid word
           game.isBeingPenalized = true
-          console.log(`game.hostTime: ${game.hostTime}`)
+          // console.log(`game.hostTime: ${game.hostTime}`)
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
-          console.log(`game.hostTime: ${game.hostTime}`)
+          // console.log(`game.hostTime: ${game.hostTime}`)
           io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false)
           setTimeout(() => {
             game.currentWord = ''

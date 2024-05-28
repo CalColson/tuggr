@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './TugBar.css'
-import { convertToPercentage } from '@/utils/conversions'
+import { convertToPercentage } from '@/utils/functions'
 
 const TugBar = ({ timeControl, blueTime }: { timeControl: string | null, blueTime: number }) => {
   const totalTime = timeControl ? parseInt(timeControl) * 2 : 60

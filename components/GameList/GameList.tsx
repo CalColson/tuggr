@@ -1,7 +1,7 @@
 'use client'
 
 import { useContext, useEffect, useState } from 'react'
-import { isScrollbarVisible } from '@/utils/checkers'
+import { isScrollbarVisible } from '@/utils/functions'
 import socket from '@/app/socket'
 import { GameListGame } from '@/app/types/GameListTypes'
 import HostGameModal from './HostGameModal'

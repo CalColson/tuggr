@@ -2,13 +2,13 @@
 
 import { useContext, useEffect, useRef, useState } from 'react'
 import TugBar from '@/components/TugBar/TugBar'
-import '../Game.css'
 import { AuthContext } from '@/app/auth/AuthProvider'
 import gameStrings from '@/app/constants/strings/gameStrings'
 import { useSearchParams } from 'next/navigation'
 import socket from '@/app/socket'
 import signals from '@/app/constants/strings/signals'
 import { GameListGame } from '@/app/types/GameListTypes'
+import '../Game.css'
 
 function Game({ params }: { params: { hostUsername: string } }) {
   const [ellipsisAnimation, setEllipsisAnimation] = useState('...')
@@ -21,6 +21,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
   const [isBeingRewarded, setIsBeingRewarded] = useState(false)
   const [isBeingPenalized, setIsBeingPenalized] = useState(false)
   const [currentWord, setCurrentWord] = useState('')
+  const [suggestedWord, setSuggestedWord] = useState('')
   const [isGameEnded, setIsGameEnded] = useState(false)
   const [isWinner, setIsWinner] = useState(false)
 
@@ -35,6 +36,36 @@ function Game({ params }: { params: { hostUsername: string } }) {
     setIsHost(user?.user_metadata.display_name === params.hostUsername)
     setIsMyTurn(isHost)
   }, [isHost, params.hostUsername, user])
+
+  // clean up suggested word after fading out
+  useEffect(() => {
+    const onAnimationEnd = (e: AnimationEvent) => {
+      if (e.animationName === 'toast-fade') {
+        setSuggestedWord('')
+      }
+    }
+    const toastElement = document.querySelector('.toast') as HTMLElement
+    if (toastElement) {
+      toastElement.addEventListener('animationend', onAnimationEnd)
+
+      return () => {
+        toastElement.removeEventListener('animationend', onAnimationEnd)
+      }
+    }
+  }, [])
+
+  // handle a second word suggestion before the first one fades out
+  useEffect(() => {
+    if (suggestedWord) {
+      const element = document.querySelector('#game .toast-fade') as HTMLElement
+      if (!element) return
+      element.classList.remove('toast-fade')
+      // Force a reflow
+      void element.offsetWidth
+      element.classList.add('toast-fade')
+    }
+  }, [suggestedWord])
+
   useEffect(() => {
     // setup ellipsis animation
     const ellipsisInterval = setInterval(() => {
@@ -74,10 +105,15 @@ function Game({ params }: { params: { hostUsername: string } }) {
     }
     document.addEventListener('keypress', handleKeyPress)
 
-    socket.on(signals.server.wordUpdated, (word: string, isHostsTurn: boolean, isValid: boolean) => {
+    socket.on(signals.server.wordUpdated, (word: string,
+      isHostsTurn: boolean,
+      isValid: boolean,
+      suggestedWord?: string | undefined
+    ) => {
       if (!isValid) {
         // console.log('word invalid')
         new Audio('/sounds/buzzer.mp3').play()
+        if (suggestedWord) setSuggestedWord(suggestedWord)
         setIsBeingPenalized(true)
       }
 
@@ -200,6 +236,11 @@ function Game({ params }: { params: { hostUsername: string } }) {
 
   return (
     <div id="game" className='flex flex-col justify-center items-center h-full'>
+      <div className={'toast toast-top pt-16 px-0 ' + (suggestedWord ? 'toast-fade' : 'hidden')}>
+        <div className='alert alert-warning mt-2'>
+          <span>{`'${suggestedWord}' was possible`}</span>
+        </div>
+      </div>
       <>{isGameEnded ? gameOverContent : gameContent}</>
       <TugBar timeControl={timeControl} blueTime={blueTime} />
       <div className='flex w-3/4 justify-between'>
