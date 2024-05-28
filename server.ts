@@ -196,11 +196,12 @@ app.prepare().then(() => {
         } else {
           // penalize the player for an invalid word
           game.isBeingPenalized = true
+          const suggestedWord = getRandomArrElement(getPossibleWords(game.currentWord))
           // console.log(`game.hostTime: ${game.hostTime}`)
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           // console.log(`game.hostTime: ${game.hostTime}`)
-          io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false)
+          io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false, suggestedWord)
           setTimeout(() => {
             game.currentWord = ''
             game.isBeingPenalized = false
