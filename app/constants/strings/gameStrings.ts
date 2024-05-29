@@ -7,7 +7,9 @@ const gameStrings = {
   OPPONENT_WON: 'opponent won!',
 
   REMATCH_REQUEST: 'rematch?',
-  REMATCH_ACCEPT: 'accept rematch?'
+  REMATCH_ACCEPT: 'accept rematch?',
+
+  ANALYSIS: 'analysis',
 }
 
 export default gameStrings

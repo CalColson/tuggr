@@ -27,11 +27,13 @@ function Game({ params }: { params: { hostUsername: string } }) {
 
   // state 0: no rematch request, state 1: rematch request sent, state 2: rematch request received
   const [rematchState, setRematchState] = useState(0)
+  const [gameEndedContent, setGameEndedContent] = useState(<></>)
 
   const timeControl = useSearchParams().get('time')
   const [blueTime, setBlueTime] = useState(timeControl ? parseInt(timeControl) : 69)
   const hasGameStarted = useRef(false)
 
+  // set isHost and isMyTurn
   useEffect(() => {
     setIsHost(user?.user_metadata.display_name === params.hostUsername)
     setIsMyTurn(isHost)
@@ -65,6 +67,38 @@ function Game({ params }: { params: { hostUsername: string } }) {
       element.classList.add('toast-fade')
     }
   }, [suggestedWord])
+
+  // handle rematch state changes
+  useEffect(() => {
+    function handleRematchRequest() {
+      setRematchState(1)
+      socket.emit(signals.client.requestRematch)
+    }
+    function handleRematchAccept() {
+      setRematchState(0)
+      socket.emit(signals.client.acceptRematch)
+    }
+
+    const rematch0Content = (
+      <div className='flex gap-12 my-16'>
+        <button className='btn btn-outline btn-secondary'>{gameStrings.ANALYSIS}</button>
+        <button onClick={handleRematchRequest} className='btn btn-outline btn-secondary'>{gameStrings.REMATCH_REQUEST}</button>
+      </div>
+    )
+    const rematch1Content = (
+      <span id='loading-spinner' className='loading loading-spinner loading-lg my-16 text-secondary'></span>
+    )
+    const rematch2Content = (
+      <div className='flex gap-12 my-16'>
+        <button className='btn btn-outline btn-secondary'>{gameStrings.ANALYSIS}</button>
+        <button onClick={handleRematchAccept} className='btn btn-secondary'>{gameStrings.REMATCH_ACCEPT}</button>
+      </div>
+    )
+
+    if (rematchState === 0) setGameEndedContent(rematch0Content)
+    else if (rematchState === 1) setGameEndedContent(rematch1Content)
+    else if (rematchState === 2) setGameEndedContent(rematch2Content)
+  }, [rematchState])
 
   useEffect(() => {
     // setup ellipsis animation
@@ -148,12 +182,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
     })
 
     socket.on(signals.server.rematchRequested, () => {
-      const rematchRequestButton = document.getElementById('rematch-request-button')
-      if (rematchRequestButton) rematchRequestButton.classList.add('hidden')
-      const loadingSpinner = document.getElementById('loading-spinner')
-      if (loadingSpinner) loadingSpinner.classList.add('hidden')
-      const rematchAcceptButton = document.getElementById('rematch-accept-button')
-      if (rematchAcceptButton) rematchAcceptButton.classList.remove('hidden')
+      setRematchState(2)
     })
 
     socket.on(signals.server.gameReset, (game: GameListGame) => {
@@ -192,44 +221,10 @@ function Game({ params }: { params: { hostUsername: string } }) {
       </h3>
     </>
   )
-
-  function handleRematchRequest() {
-    setRematchState(1)
-    socket.emit(signals.client.requestRematch)
-
-    const rematchRequestButton = document.getElementById('rematch-request-button')
-    if (rematchRequestButton) rematchRequestButton.classList.add('hidden')
-    const loadingSpinner = document.getElementById('loading-spinner')
-    if (loadingSpinner) loadingSpinner.classList.remove('hidden')
-  }
-  function handleRematchAccept() {
-    setRematchState(0)
-
-    socket.emit(signals.client.acceptRematch)
-  }
-  const rematch0Content = (
-    <button id='rematch-request-button'
-      onClick={handleRematchRequest}
-      className='btn btn-outline btn-secondary my-16'>
-      {gameStrings.REMATCH_REQUEST}
-    </button>
-  )
-  const rematch1Content = (
-    <span id='loading-spinner' className='loading loading-spinner loading-lg my-16 text-secondary hidden'></span>
-  )
-  const rematch2Content = (
-    <button id='rematch-accept-button'
-      onClick={handleRematchAccept}
-      className='btn btn-secondary my-16 hidden'>
-      {gameStrings.REMATCH_ACCEPT}
-    </button>
-  )
   const gameOverContent = (
     <>
       <h3 className="text-3xl">{isWinner ? gameStrings.YOU_WON : gameStrings.OPPONENT_WON}</h3>
-      {rematch0Content}
-      {rematch1Content}
-      {rematch2Content}
+      {gameEndedContent}
     </>
   )
 
