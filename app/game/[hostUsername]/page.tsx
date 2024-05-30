@@ -7,8 +7,9 @@ import gameStrings from '@/app/constants/strings/gameStrings'
 import { useSearchParams } from 'next/navigation'
 import socket from '@/app/socket'
 import signals from '@/app/constants/strings/signals'
-import { GameListGame } from '@/app/types/GameListTypes'
+import { GameListGame, wordInfo } from '@/app/types/GameListTypes'
 import '../Game.css'
+import AnalysisModal from './AnalysisModal'
 
 function Game({ params }: { params: { hostUsername: string } }) {
   const [ellipsisAnimation, setEllipsisAnimation] = useState('...')
@@ -24,14 +25,18 @@ function Game({ params }: { params: { hostUsername: string } }) {
   const [suggestedWord, setSuggestedWord] = useState('')
   const [isGameEnded, setIsGameEnded] = useState(false)
   const [isWinner, setIsWinner] = useState(false)
+  const [wordHistory, setWordHistory] = useState<wordInfo[]>([])
+  const [matchTime, setMatchTime] = useState(0)
 
+  const [gameEndedContent, setGameEndedContent] = useState(<></>)
   // state 0: no rematch request, state 1: rematch request sent, state 2: rematch request received
   const [rematchState, setRematchState] = useState(0)
-  const [gameEndedContent, setGameEndedContent] = useState(<></>)
 
   const timeControl = useSearchParams().get('time')
   const [blueTime, setBlueTime] = useState(timeControl ? parseInt(timeControl) : 69)
   const hasGameStarted = useRef(false)
+
+  const MODAL_ID = 'analysis-modal'
 
   // set isHost and isMyTurn
   useEffect(() => {
@@ -78,10 +83,15 @@ function Game({ params }: { params: { hostUsername: string } }) {
       setRematchState(0)
       socket.emit(signals.client.acceptRematch)
     }
+    function handleAnalysisClick() {
+      socket.emit(signals.client.getAnalysis)
+      const analysisModal = document.getElementById(MODAL_ID) as HTMLDialogElement
+      analysisModal?.showModal()
+    }
 
     const rematch0Content = (
       <div className='flex gap-12 my-16'>
-        <button className='btn btn-outline btn-secondary'>{gameStrings.ANALYSIS}</button>
+        <button onClick={handleAnalysisClick} className='btn btn-outline btn-secondary'>{gameStrings.ANALYSIS}</button>
         <button onClick={handleRematchRequest} className='btn btn-outline btn-secondary'>{gameStrings.REMATCH_REQUEST}</button>
       </div>
     )
@@ -180,6 +190,10 @@ function Game({ params }: { params: { hostUsername: string } }) {
       // console.log(`hostWon: ${hostWon}, isHost: ${isHost}`)
       setIsGameEnded(true)
     })
+    socket.on(signals.server.analysisSent, (wordHistory: wordInfo[], matchTime: number) => {
+      setWordHistory(wordHistory)
+      setMatchTime(matchTime)
+    })
 
     socket.on(signals.server.rematchRequested, () => {
       setRematchState(2)
@@ -192,6 +206,8 @@ function Game({ params }: { params: { hostUsername: string } }) {
       setCurrentWord(game.currentWord)
       setBlueTime(game.time)
       setIsMyTurn(isHost ? game.isHostsTurn : !game.isHostsTurn)
+      setWordHistory([])
+      setMatchTime(0)
       hasGameStarted.current = false
     })
 
@@ -205,6 +221,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
       socket.off(signals.server.penaltyEnded)
       socket.off(signals.server.timeUpdated)
       socket.off(signals.server.gameEnded)
+      socket.off(signals.server.analysisSent)
       socket.off(signals.server.rematchRequested)
       socket.off(signals.server.gameReset)
     }
@@ -230,19 +247,22 @@ function Game({ params }: { params: { hostUsername: string } }) {
 
 
   return (
-    <div id="game" className='flex flex-col justify-center items-center h-full'>
-      <div className={'toast toast-top pt-16 px-0 ' + (suggestedWord ? 'toast-fade' : 'hidden')}>
-        <div className='alert alert-warning mt-2'>
-          <span>{`'${suggestedWord}' was possible`}</span>
+    <>
+      <AnalysisModal id={MODAL_ID} wordHistory={wordHistory} matchTime={matchTime} />
+      <div id="game" className='flex flex-col justify-center items-center h-full'>
+        <div className={'toast toast-top pt-16 px-0 ' + (suggestedWord ? 'toast-fade' : 'hidden')}>
+          <div className='alert alert-warning mt-2'>
+            <span>{`'${suggestedWord}' was possible`}</span>
+          </div>
+        </div>
+        <>{isGameEnded ? gameOverContent : gameContent}</>
+        <TugBar timeControl={timeControl} blueTime={blueTime} />
+        <div className='flex w-3/4 justify-between'>
+          <h3 className="text-xl">{isHost ? gameStrings.YOUR_NAME : gameStrings.OPPONENT_NAME}</h3>
+          <h3 className="text-xl">{isHost ? gameStrings.OPPONENT_NAME : gameStrings.YOUR_NAME}</h3>
         </div>
       </div>
-      <>{isGameEnded ? gameOverContent : gameContent}</>
-      <TugBar timeControl={timeControl} blueTime={blueTime} />
-      <div className='flex w-3/4 justify-between'>
-        <h3 className="text-xl">{isHost ? gameStrings.YOUR_NAME : gameStrings.OPPONENT_NAME}</h3>
-        <h3 className="text-xl">{isHost ? gameStrings.OPPONENT_NAME : gameStrings.YOUR_NAME}</h3>
-      </div>
-    </div>
+    </>
   )
 }
 

@@ -20,9 +20,12 @@ const TEST_GAME: GameListGame = {
   isBeingRewarded: false,
   isBeingPenalized: false,
   hostTime: 5,
+  startTime: null,
+  endTime: null,
   timerInterval: null,
   lastTimeUpdateTimestamp: 0,
-  rematchCount: 0
+  rematchCount: 0,
+  wordHistory: [],
 }
 
 const dev = process.env.NODE_ENV !== 'production'
@@ -76,9 +79,12 @@ app.prepare().then(() => {
         isBeingRewarded: false,
         isBeingPenalized: false,
         hostTime: hostGameArgs.timeControl,
+        startTime: null,
+        endTime: null,
         timerInterval: null,
         lastTimeUpdateTimestamp: 0,
         rematchCount: 0,
+        wordHistory: [],
       }
       if (!games.some(g => g.hostUsername === game.hostUsername)) games.unshift(game)
       else {
@@ -117,6 +123,7 @@ app.prepare().then(() => {
       if (game) {
         console.log(socket.id + ' started game')
         game.hasGameStarted = true
+        game.startTime = Date.now()
         game.lastTimeUpdateTimestamp = Date.now()
         game.timerInterval = setInterval(() => {
           const currentTime = Date.now()
@@ -130,6 +137,7 @@ app.prepare().then(() => {
             if (game.timerInterval) {
               clearInterval(game.timerInterval)
               game.timerInterval = null
+              game.endTime = Date.now()
               game.hostTime = game.hostTime <= 0 ? 0 : game.time * 2
               io.to(game.hostUsername).emit(signals.server.timeUpdated, game.hostTime)
               if (game.hostTime <= 0) io.to(game.hostUsername).emit(signals.server.gameEnded, false)
@@ -162,6 +170,19 @@ app.prepare().then(() => {
           suggestedWord = getRandomArrElement(getPossibleWords(game.currentWord.slice(0, -1)))
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
+
+          if (game.startTime) game.wordHistory.push({
+            word: game.currentWord,
+            time: Date.now() - game.startTime,
+            player: game.isHostsTurn ? 'host' : 'challenger',
+            valid: false,
+          })
+
+          // for testing where turn always changes
+          // pros: maybe more intuitive when turn always changes after input
+          // cons: causes the bar to jerk around (backwards b/c of the penalty, forwards on turn switch)
+          // game.isHostsTurn = !game.isHostsTurn
+
           setTimeout(() => {
             game.currentWord = ''
             game.isBeingPenalized = false
@@ -183,6 +204,14 @@ app.prepare().then(() => {
           game.isBeingRewarded = true
           if (game.isHostsTurn) game.hostTime += (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
           else game.hostTime -= (game.time / DEFAULT_REWARD) + DEFAULT_REWARD_FREEZE_TIME
+
+          if (game.startTime) game.wordHistory.push({
+            word: game.currentWord,
+            time: Date.now() - game.startTime,
+            player: game.isHostsTurn ? 'host' : 'challenger',
+            valid: true
+          })
+
           game.isHostsTurn = !game.isHostsTurn
 
           // console.log('emitting word accepted')
@@ -201,6 +230,14 @@ app.prepare().then(() => {
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           // console.log(`game.hostTime: ${game.hostTime}`)
+
+          if (game.startTime) game.wordHistory.push({
+            word: game.currentWord,
+            time: Date.now() - game.startTime,
+            player: game.isHostsTurn ? 'host' : 'challenger',
+            valid: false,
+          })
+
           io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false, suggestedWord)
           setTimeout(() => {
             game.currentWord = ''
@@ -210,6 +247,17 @@ app.prepare().then(() => {
           }, DEFAULT_PENALTY_FREEZE_TIME * 1000)
 
         }
+      }
+    })
+
+    socket.on(signals.client.getAnalysis, () => {
+      const game = games.find(g => socket.rooms.has(g.hostUsername))
+      if (game) {
+        if (!game.endTime || !game.startTime) {
+          console.error('missing game start or end time')
+          return
+        }
+        io.to(game.hostUsername).emit(signals.server.analysisSent, game.wordHistory, game.endTime - game.startTime)
       }
     })
 
@@ -234,8 +282,11 @@ app.prepare().then(() => {
         game.currentWord = ''
         game.isHostsTurn = game.rematchCount % 2 === 0
         game.hostTime = game.time
+        game.startTime = null
+        game.endTime = null
         game.timerInterval = null
         game.lastTimeUpdateTimestamp = 0
+        game.wordHistory = []
 
         io.to(game.hostUsername).emit(signals.server.gameReset, game)
       }

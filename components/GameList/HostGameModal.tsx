@@ -47,8 +47,8 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
           </select>
         </div>
         <div className='flex w-full justify-around'>
-          <button onClick={handleConfirm} className='btn btn-success'>host</button>
-          <button onClick={handleCancel} className='btn btn-error'>cancel</button>
+          <button onClick={handleCancel} className='btn btn-error w-24'>cancel</button>
+          <button onClick={handleConfirm} className='btn btn-success w-24'>host</button>
         </div>
       </div>
       <form method="dialog" className="modal-backdrop">

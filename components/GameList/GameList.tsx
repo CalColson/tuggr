@@ -25,7 +25,7 @@ const GameList = () => {
 
   }
   function handleHostGame() {
-    const hostGameModal = document.getElementById('host-game-modal') as HTMLDialogElement
+    const hostGameModal = document.getElementById(MODAL_ID) as HTMLDialogElement
     hostGameModal?.showModal()
   }
   function handleDeleteHostedGame() {

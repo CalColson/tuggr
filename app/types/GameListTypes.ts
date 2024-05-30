@@ -11,7 +11,19 @@ export interface GameListGame {
   isBeingRewarded: boolean,
   isBeingPenalized: boolean,
   hostTime: number,
+  // the times the game was started/ended (uses Date.now())
+  startTime: number | null,
+  endTime: number | null,
   timerInterval: NodeJS.Timeout | null,
   lastTimeUpdateTimestamp: number,
   rematchCount: number,
+  wordHistory: wordInfo[],
+}
+
+export interface wordInfo {
+  word: string,
+  time: number,
+  player: string,
+  valid: boolean,
+  // TODO: add possible words for invalid words
 }

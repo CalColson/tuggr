@@ -1,11 +1,13 @@
 NEXT UP:
 -----------------------------------------------------------------------------
-- allow users to host a room in the GameList
 
-- remove users from socketio room when the game component unmounts
+- handle edge case where two people submit rematch requests at the same time (they will both be stuck with loading circle)
+
+- make joining and leaving games more robust... it's currently very breakable (refreshes, etc) 
 
 DONE:
 -----------------------------------------------------------------------------
 
 - add props to the link from the join button in GameList to the Game page.
   - will need to know the game room (host name)... and maybe more
+- allow users to host a room in the GameList

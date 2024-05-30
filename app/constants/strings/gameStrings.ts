@@ -10,6 +10,8 @@ const gameStrings = {
   REMATCH_ACCEPT: 'accept rematch?',
 
   ANALYSIS: 'analysis',
+
+  CLOSE: 'close',
 }
 
 export default gameStrings
