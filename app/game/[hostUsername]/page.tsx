@@ -256,7 +256,7 @@ function Game({ params }: { params: { hostUsername: string } }) {
           </div>
         </div>
         <>{isGameEnded ? gameOverContent : gameContent}</>
-        <TugBar timeControl={timeControl} blueTime={blueTime} />
+        <TugBar timeControl={timeControl} blueTime={blueTime} isBlueTurn={(isHost && isMyTurn) || (!isHost && !isMyTurn)} />
         <div className='flex w-3/4 justify-between'>
           <h3 className="text-xl">{isHost ? gameStrings.YOUR_NAME : gameStrings.OPPONENT_NAME}</h3>
           <h3 className="text-xl">{isHost ? gameStrings.OPPONENT_NAME : gameStrings.YOUR_NAME}</h3>

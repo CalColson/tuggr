@@ -25,5 +25,5 @@ export interface wordInfo {
   time: number,
   player: string,
   valid: boolean,
-  // TODO: add possible words for invalid words
+  suggestions?: string[],
 }

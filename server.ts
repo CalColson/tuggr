@@ -6,7 +6,7 @@ import { HostGameArgs } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
 import { getWordList } from './utils/fileHandler.js'
-import { getRandomArrElement } from './utils/functions.js'
+import { getRandomArrElement, getRandomArrElements } from './utils/functions.js'
 
 // remember to remove this
 const TEST_GAME: GameListGame = {
@@ -167,7 +167,8 @@ app.prepare().then(() => {
         } else {
           // penalize the player for an invalid word
           game.isBeingPenalized = true
-          suggestedWord = getRandomArrElement(getPossibleWords(game.currentWord.slice(0, -1)))
+          const possibleSuggestions = getPossibleWords(game.currentWord.slice(0, -1))
+          suggestedWord = getRandomArrElement(possibleSuggestions)
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
 
@@ -176,6 +177,7 @@ app.prepare().then(() => {
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
             valid: false,
+            suggestions: getRandomArrElements(possibleSuggestions, 3)
           })
 
           // for testing where turn always changes
@@ -225,7 +227,8 @@ app.prepare().then(() => {
         } else {
           // penalize the player for an invalid word
           game.isBeingPenalized = true
-          const suggestedWord = getRandomArrElement(getPossibleWords(game.currentWord))
+          const possibleSuggestions = getPossibleWords(game.currentWord)
+          const suggestedWord = getRandomArrElement(possibleSuggestions)
           // console.log(`game.hostTime: ${game.hostTime}`)
           if (game.isHostsTurn) game.hostTime -= (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
           else game.hostTime += (game.time / DEFAULT_PENALTY) - DEFAULT_PENALTY_FREEZE_TIME
@@ -236,6 +239,7 @@ app.prepare().then(() => {
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
             valid: false,
+            suggestions: getRandomArrElements(possibleSuggestions, 3)
           })
 
           io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false, suggestedWord)

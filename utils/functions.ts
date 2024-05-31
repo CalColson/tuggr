@@ -19,3 +19,11 @@ export function convertToMinutesAndSeconds(time: number): string {
 export function getRandomArrElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
+export function getRandomArrElements<T>(arr: T[], count: number): T[] {
+  if (count > arr.length) {
+    return arr
+  }
+
+  const shuffled = [...arr].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, count)
+}

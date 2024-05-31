@@ -18,9 +18,18 @@ const AnalysisModal = (props: { id: string, wordHistory: wordInfo[], matchTime: 
           <ul className='w-full'>
             {props.wordHistory.map((word, index) => (
               <li key={index} className='flex justify-between'>
-                <span className={word.valid ? 'text-success' : 'text-error'}>{word.word}</span>
-                <span>{word.player}</span>
-                <span>{convertToMinutesAndSeconds(word.time)}</span>
+                <div className={`w-1/3 ${word.valid ? 'text-success underline' : 'text-error'}`}>
+                  {word.valid ?
+                    <a href={`https://en.wiktionary.org/wiki/${word.word}#English`} target='_blank' rel='noopener noreferrer'>
+                      {word.word}
+                    </a> :
+                    // TODO: add tooltip with suggestions
+                    <span className='tooltip tooltip-right tooltip-info border-b border-dotted' data-tip={`possible words: ${word.suggestions?.toString().replace(/,/g, ', ')}`}>{word.word}</span>
+                  }
+
+                </div>
+                <div className='w-1/3 text-center'>{word.player}</div>
+                <div className='w-1/3 text-end'>{convertToMinutesAndSeconds(word.time)}</div>
               </li>
             ))}
           </ul>
