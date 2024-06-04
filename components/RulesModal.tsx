@@ -10,6 +10,7 @@ const RulesModal = (props: { id: string }) => {
   }
 
   return (
+    // TODO: change this to a slideshow/carousel
     <dialog id={props.id} className="modal">
       <div className="modal-box h-5/6 max-w-none w-3/4 flex flex-col justify-between items-center">
         <h3 className="font-bold text-3xl mb-6 underline">tuggr rules</h3>
@@ -39,7 +40,13 @@ const RulesModal = (props: { id: string }) => {
             {'keep playing until one player collects all of their opponent\'s time. and most importantly... have fun!'}
           </p>
           <p className='mt-5'>
-            {'tip: there is a brief lockout period after penalties and rewards, so mashing new letters will not help. use this time to think of good words to play!'}
+            {'tips:'}
+          </p>
+          <p>
+            {'#1: the time lost from a penalty is twice the time your opponent gains from a reward, so don\'t fret too much about letting your opponent complete a word, it is more important that you keep your word valid!'}
+          </p>
+          <p>
+            {'#2: there is a brief lockout period after penalties and rewards, so mashing new letters will not help. use this time to think of good words to play!'}
           </p>
         </div>
         <div className='flex w-full justify-around'>
