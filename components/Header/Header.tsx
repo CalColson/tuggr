@@ -11,8 +11,8 @@ const Header = () => {
       <div className='flex justify-between h-full shadow-2xl px-4'>
         <div className='flex items-center gap-16'>
           <Link className='text-2xl' href='/'>tuggr</Link>
-          <Link href='/'>about</Link>
-          <Link href='/'>contact</Link>
+          <Link href='/about'>about</Link>
+          <Link href='/contact'>contact</Link>
         </div>
         <RightSide />
       </div>
