@@ -26,19 +26,34 @@ const AuthProvider = ({
     // I leverage this expression here simply to connect the socket, as AuthProvider wraps the entire app
     socket
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.getUser().then((res) => {
+      if (res.error && res.error.name === 'AuthApiError') {
+        supabase.auth.signOut()
+      } else if (res.error?.name === 'AuthSessionMissingError') {
+        // console.log('no session found')
+      }
+      else if (res.error) console.error(res.error)
+
+      setUser(res.data.user as AuthUser | null)
+    })
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       // console.log(event)
       // console.log(session)
-      if (session?.user) setUser(session.user as AuthUser)
-      else setUser(null)
+      const user = (session?.user as AuthUser | null) ?? null
+      setUser(user)
 
       if (event === 'SIGNED_IN') {
-        console.log(`user ${session?.user?.id} signed in`)
+        console.log(`user ${user?.user_metadata.display_name} signed in`)
       }
       if (event === 'SIGNED_OUT') {
-        console.log(`user ${session?.user?.id} signed out`)
+        console.log(`user ${user?.user_metadata.display_name} signed out`)
       }
     })
+
+    return () => {
+      authListener?.subscription.unsubscribe()
+    }
   }, [])
   return (
     <AuthContext.Provider value={{ user, setUser }}>
