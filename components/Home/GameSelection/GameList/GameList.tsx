@@ -78,8 +78,7 @@ const GameList = () => {
   return (
     <>
       <HostGameModal id={MODAL_ID} onModalClose={onResize} />
-      <div id='game-list' className={'flex-1 px-8 overflow-auto' + (isScrollVisible ? '' : ' border-r')}>
-        <h1 className="text-2xl text-center border-b">available games:</h1>
+      <div id='game-list' className={'px-8 overflow-auto'}>
         <table className='min-w-full text-left'>
           <thead>
             <tr>
