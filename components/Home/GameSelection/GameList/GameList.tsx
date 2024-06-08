@@ -8,6 +8,7 @@ import HostGameModal from './HostGameModal'
 import { AuthContext } from '@/app/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import signals from '@/app/constants/strings/signals'
+import { supabase } from '@/utils/supabase/client'
 
 const GameList = () => {
   const [innerWidth, setInnerWidth] = useState(0)
@@ -15,7 +16,6 @@ const GameList = () => {
   const { user } = useContext(AuthContext)
   const router = useRouter()
 
-  // const games = dummyGameListGames
   const [games, setGames] = useState<GameListGame[]>([])
 
   const MODAL_ID = 'host-game-modal'
@@ -50,6 +50,30 @@ const GameList = () => {
       window.removeEventListener('resize', onResize)
     }
   }, [innerWidth])
+  useEffect(() => {
+    // initial fetch of games
+    supabase.from('game_list_games').select<'*', GameListGame>('*').then(({ data, error }) => {
+      if (error) {
+        console.error(error)
+      }
+      else {
+        if (data) setGames(data)
+      }
+    })
+
+
+    const channel = supabase
+      .channel('game_list_games')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_list_games' }, (payload) => {
+        console.log(payload)
+      })
+      .subscribe()
+
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
   useEffect(() => {
 
     function handleGameHosted(newGames: GameListGame[]) {

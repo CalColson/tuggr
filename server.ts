@@ -1,33 +1,36 @@
+import dotenv from 'dotenv'
 import { createServer } from 'node:http'
 import next from 'next'
 import { Server } from 'socket.io'
-import { GameListGame } from './app/types/GameListTypes'
+import { TuggrGame } from './app/types/GameTypes'
 import { HostGameArgs } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
 import { getWordList } from './utils/fileHandler.js'
 import { getRandomArrElement, getRandomArrElements } from './utils/functions.js'
+import { createBrowserClient } from '@supabase/ssr'
 
 // remember to remove this
-const TEST_GAME: GameListGame = {
-  hostUsername: 'apparent_amethyst_walrus',
-  rating: 1000,
-  time: 5,
-  isInProgress: true,
-  hasGameStarted: false,
-  currentWord: '',
-  isHostsTurn: true,
-  isBeingRewarded: false,
-  isBeingPenalized: false,
-  hostTime: 5,
-  startTime: null,
-  endTime: null,
-  timerInterval: null,
-  lastTimeUpdateTimestamp: 0,
-  rematchCount: 0,
-  wordHistory: [],
-}
+// const TEST_GAME: GameListGame = {
+//   hostUsername: 'apparent_amethyst_walrus',
+//   rating: 1000,
+//   time: 5,
+//   isInProgress: true,
+//   hasGameStarted: false,
+//   currentWord: '',
+//   isHostsTurn: true,
+//   isBeingRewarded: false,
+//   isBeingPenalized: false,
+//   hostTime: 5,
+//   startTime: null,
+//   endTime: null,
+//   timerInterval: null,
+//   lastTimeUpdateTimestamp: 0,
+//   rematchCount: 0,
+//   wordHistory: [],
+// }
 
+dotenv.config({ path: './.env.local' })
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = 3000
@@ -40,10 +43,19 @@ const handler = app.getRequestHandler()
 app.prepare().then(() => {
   const httpServer = createServer(handler)
   const io = new Server(httpServer)
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+  supabase.auth.signInWithPassword({
+    email: process.env.ADMIN_EMAIL!,
+    password: process.env.ADMIN_PASSWORD!
+  }).then(res => {
+    // console.log(res)
+  })
 
   // in-memory store for games
-  // let games: GameListGame[] = []
-  let games: GameListGame[] = [TEST_GAME]
+  let games: TuggrGame[] = []
   const DEFAULT_RATING = 1000
   // the fraction of the time control to reward/penalize the player for a valid/invalid word
   // e.g. a value of 3 means the player will lose 1/3 of their starting time for an invalid word
@@ -68,7 +80,7 @@ app.prepare().then(() => {
       console.log(socket.id + ' hosted game with args:')
       console.dir(hostGameArgs)
 
-      const game: GameListGame = {
+      const game: TuggrGame = {
         hostUsername: hostGameArgs.hostDisplayName,
         rating: DEFAULT_RATING,
         time: hostGameArgs.timeControl,

@@ -3,7 +3,6 @@
 import { createContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/utils/supabase/client'
 import Header from '@/components/Header/Header'
-import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-generator'
 import socket from '../socket'
 import { AuthUser } from '../types/AuthUser'
 

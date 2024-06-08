@@ -13,6 +13,7 @@
     "@supabase/supabase-js": "latest",
     "autoprefixer": "10.4.17",
     "boring-avatars": "^1.10.2",
+    "dotenv": "^16.4.5",
     "geist": "^1.2.1",
     "next": "latest",
     "postcss": "8.4.33",

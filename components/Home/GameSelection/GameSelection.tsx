@@ -19,7 +19,7 @@ const GameSelection = () => {
         </div>
         <div className='flex-grow'>
           {selectedTab == QUICK_PLAY ?
-            <QuickPlay />
+            <QuickPlay setSelectedTab={setSelectedTab} />
             :
             <GameList />
           }
