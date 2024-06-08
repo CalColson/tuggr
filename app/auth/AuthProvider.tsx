@@ -1,10 +1,10 @@
 'use client'
 
-import { createContext, useEffect, useRef, useState } from 'react'
-import { supabase } from '@/utils/supabase/client'
+import { createContext, useEffect, useRef, useState, } from 'react'
+import { supabase, } from '@/utils/supabase/client'
 import Header from '@/components/Header/Header'
 import socket from '../socket'
-import { AuthUser } from '../types/AuthUser'
+import { AuthUser, } from '../types/AuthUser'
 
 export const AuthContext = createContext<{
   user: AuthUser | null;
@@ -19,7 +19,7 @@ const AuthProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser,] = useState<AuthUser | null>(null)
 
   useEffect(() => {
     // I leverage this expression here simply to connect the socket, as AuthProvider wraps the entire app
@@ -36,7 +36,7 @@ const AuthProvider = ({
       setUser(res.data.user as AuthUser | null)
     })
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener, } = supabase.auth.onAuthStateChange((event, session) => {
       // console.log(event)
       // console.log(session)
       const user = (session?.user as AuthUser | null) ?? null
@@ -55,7 +55,7 @@ const AuthProvider = ({
     }
   }, [])
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider value={{ user, setUser, }}>
       <Header />
       {children}
     </AuthContext.Provider>

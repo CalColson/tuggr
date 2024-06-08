@@ -24,6 +24,6 @@ export function getRandomArrElements<T>(arr: T[], count: number): T[] {
     return arr
   }
 
-  const shuffled = [...arr].sort(() => 0.5 - Math.random())
+  const shuffled = [...arr,].sort(() => 0.5 - Math.random())
   return shuffled.slice(0, count)
 }

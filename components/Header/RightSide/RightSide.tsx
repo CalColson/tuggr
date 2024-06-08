@@ -1,13 +1,13 @@
 'use client'
 
-import { AuthContext } from '@/app/auth/AuthProvider'
-import { supabase } from '@/utils/supabase/client'
+import { AuthContext, } from '@/app/auth/AuthProvider'
+import { supabase, } from '@/utils/supabase/client'
 import Avatar from 'boring-avatars'
 import Link from 'next/link'
-import { useContext } from 'react'
+import { useContext, } from 'react'
 
 const RightSide = () => {
-  const { user, setUser } = useContext(AuthContext)
+  const { user, setUser, } = useContext(AuthContext)
 
   const handleSignOut = () => {
     supabase.auth.signOut().then(() => {
@@ -23,7 +23,7 @@ const RightSide = () => {
           <Avatar
             name={user.user_metadata.display_name}
             variant='beam'
-            colors={['#0a0310', '#49007e', '#ff005b', '#ff7d10', '#ffb238']} />
+            colors={['#0a0310', '#49007e', '#ff005b', '#ff7d10', '#ffb238',]} />
         </button>
         <button>{user.user_metadata.display_name}</button>
       </div>

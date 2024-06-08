@@ -28,7 +28,7 @@ const signals = {
     analysisSent: 'analysis-sent',
     rematchRequested: 'rematch-requested',
     gameReset: 'game-reset',
-  }
+  },
 }
 
 export default signals

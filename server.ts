@@ -1,14 +1,14 @@
 import dotenv from 'dotenv'
-import { createServer } from 'node:http'
+import { createServer, } from 'node:http'
 import next from 'next'
-import { Server } from 'socket.io'
-import { TuggrGame } from './app/types/GameTypes'
-import { HostGameArgs } from './app/types/HostGameArgs'
+import { Server, } from 'socket.io'
+import { TuggrGame, } from './app/types/GameTypes'
+import { HostGameArgs, } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
-import { getWordList } from './utils/fileHandler.js'
-import { getRandomArrElement, getRandomArrElements } from './utils/functions.js'
-import { createBrowserClient } from '@supabase/ssr'
+import { getWordList, } from './utils/fileHandler.js'
+import { getRandomArrElement, getRandomArrElements, } from './utils/functions.js'
+import { createBrowserClient, } from '@supabase/ssr'
 
 // remember to remove this
 // const TEST_GAME: GameListGame = {
@@ -30,14 +30,14 @@ import { createBrowserClient } from '@supabase/ssr'
 //   wordHistory: [],
 // }
 
-dotenv.config({ path: './.env.local' })
+dotenv.config({ path: './.env.local', })
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = 3000
 
 const wordList = getWordList()
 
-const app = next({ dev, hostname, port })
+const app = next({ dev, hostname, port, })
 const handler = app.getRequestHandler()
 
 app.prepare().then(() => {
@@ -49,14 +49,13 @@ app.prepare().then(() => {
   )
   supabase.auth.signInWithPassword({
     email: process.env.ADMIN_EMAIL!,
-    password: process.env.ADMIN_PASSWORD!
+    password: process.env.ADMIN_PASSWORD!,
   }).then(res => {
     // console.log(res)
   })
 
   // in-memory store for games
   let games: TuggrGame[] = []
-  const DEFAULT_RATING = 1000
   // the fraction of the time control to reward/penalize the player for a valid/invalid word
   // e.g. a value of 3 means the player will lose 1/3 of their starting time for an invalid word
   const DEFAULT_REWARD = 6
@@ -82,7 +81,7 @@ app.prepare().then(() => {
 
       const game: TuggrGame = {
         hostUsername: hostGameArgs.hostDisplayName,
-        rating: DEFAULT_RATING,
+        rating: hostGameArgs.rating,
         time: hostGameArgs.timeControl,
         isInProgress: false,
         hasGameStarted: false,
@@ -189,7 +188,7 @@ app.prepare().then(() => {
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
             valid: false,
-            suggestions: getRandomArrElements(possibleSuggestions, 3)
+            suggestions: getRandomArrElements(possibleSuggestions, 3),
           })
 
           // for testing where turn always changes
@@ -223,7 +222,7 @@ app.prepare().then(() => {
             word: game.currentWord,
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
-            valid: true
+            valid: true,
           })
 
           game.isHostsTurn = !game.isHostsTurn
@@ -251,7 +250,7 @@ app.prepare().then(() => {
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
             valid: false,
-            suggestions: getRandomArrElements(possibleSuggestions, 3)
+            suggestions: getRandomArrElements(possibleSuggestions, 3),
           })
 
           io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false, suggestedWord)

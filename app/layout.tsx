@@ -1,8 +1,8 @@
-import { Inter } from 'next/font/google'
+import { Inter, } from 'next/font/google'
 import AuthProvider from './auth/AuthProvider'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin',], })
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

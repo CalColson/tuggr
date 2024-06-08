@@ -1,14 +1,14 @@
-import { AuthContext } from '@/app/auth/AuthProvider'
-import { DEFAULT_TIME_CONTROL } from '@/app/constants/defaults'
+import { AuthContext, } from '@/app/auth/AuthProvider'
+import { DEFAULT_TIME_CONTROL, } from '@/app/constants/defaults'
 import signals from '@/app/constants/strings/signals'
 import socket from '@/app/socket'
-import { AuthUser } from '@/app/types/AuthUser'
-import { HostGameArgs } from '@/app/types/HostGameArgs'
-import { generateAnonUser } from '@/utils/supabase/client'
-import React, { useContext } from 'react'
+import { AuthUser, } from '@/app/types/AuthUser'
+import { HostGameArgs, } from '@/app/types/HostGameArgs'
+import { generateAnonUser, } from '@/utils/supabase/client'
+import React, { useContext, } from 'react'
 
-const QuickPlay = ({ setSelectedTab }: { setSelectedTab: React.Dispatch<React.SetStateAction<string>> }) => {
-  const { user, setUser } = useContext(AuthContext)
+const QuickPlay = ({ setSelectedTab, }: { setSelectedTab: React.Dispatch<React.SetStateAction<string>> }) => {
+  const { user, setUser, } = useContext(AuthContext)
 
   async function ensureUser() {
     if (!user) {
@@ -24,7 +24,8 @@ const QuickPlay = ({ setSelectedTab }: { setSelectedTab: React.Dispatch<React.Se
     // TODO: if no game found, create a new game
     const hostGameArgs: HostGameArgs = {
       hostDisplayName: ensuredUser?.user_metadata.display_name as string,
-      timeControl: timeControl ?? DEFAULT_TIME_CONTROL
+      rating: ensuredUser?.user_metadata.rating as number,
+      timeControl: timeControl ?? DEFAULT_TIME_CONTROL,
     }
     socket.emit(signals.client.hostGame, hostGameArgs)
     setSelectedTab('lobby')

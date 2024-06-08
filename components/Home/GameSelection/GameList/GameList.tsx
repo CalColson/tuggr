@@ -1,22 +1,22 @@
 'use client'
 
-import { useContext, useEffect, useState } from 'react'
-import { isScrollbarVisible } from '@/utils/functions'
+import { useContext, useEffect, useState, } from 'react'
+import { isScrollbarVisible, } from '@/utils/functions'
 import socket from '@/app/socket'
-import { GameListGame } from '@/app/types/GameListTypes'
+import { GameListGame, } from '@/app/types/GameListTypes'
 import HostGameModal from './HostGameModal'
-import { AuthContext } from '@/app/auth/AuthProvider'
-import { useRouter } from 'next/navigation'
+import { AuthContext, } from '@/app/auth/AuthProvider'
+import { useRouter, } from 'next/navigation'
 import signals from '@/app/constants/strings/signals'
-import { supabase } from '@/utils/supabase/client'
+import { supabase, } from '@/utils/supabase/client'
 
 const GameList = () => {
-  const [innerWidth, setInnerWidth] = useState(0)
-  const [isScrollVisible, setIsScrollVisible] = useState(false)
-  const { user } = useContext(AuthContext)
+  const [innerWidth, setInnerWidth,] = useState(0)
+  const [isScrollVisible, setIsScrollVisible,] = useState(false)
+  const { user, } = useContext(AuthContext)
   const router = useRouter()
 
-  const [games, setGames] = useState<GameListGame[]>([])
+  const [games, setGames,] = useState<GameListGame[]>([])
 
   const MODAL_ID = 'host-game-modal'
 
@@ -49,10 +49,10 @@ const GameList = () => {
     return () => {
       window.removeEventListener('resize', onResize)
     }
-  }, [innerWidth])
+  }, [innerWidth,])
   useEffect(() => {
     // initial fetch of games
-    supabase.from('game_list_games').select<'*', GameListGame>('*').then(({ data, error }) => {
+    supabase.from('game_list_games').select<'*', GameListGame>('*').then(({ data, error, }) => {
       if (error) {
         console.error(error)
       }
@@ -60,12 +60,17 @@ const GameList = () => {
         if (data) setGames(data)
       }
     })
+  }, [])
+  useEffect(() => {
 
 
     const channel = supabase
       .channel('game_list_games')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_list_games' }, (payload) => {
-        console.log(payload)
+      .on<GameListGame>('postgres_changes', { event: '*', schema: 'public', table: 'game_list_games', }, (payload) => {
+        // console.log(payload)
+        if (payload.eventType == 'INSERT') setGames([payload.new, ...games,])
+        if (payload.eventType == 'DELETE') setGames(games.filter(game => game.id != payload.old.id))
+        if (payload.eventType == 'UPDATE') { setGames([payload.new, ...games.filter(game => game.id != payload.old.id),]) }
       })
       .subscribe()
 
@@ -73,7 +78,7 @@ const GameList = () => {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [games,])
   useEffect(() => {
 
     function handleGameHosted(newGames: GameListGame[]) {
@@ -97,7 +102,7 @@ const GameList = () => {
       socket.off(signals.server.gameHosted, handleGameHosted)
       socket.off(signals.server.gameJoined, handleGameJoined)
     }
-  }, [router])
+  }, [router,])
 
   return (
     <>

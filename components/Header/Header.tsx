@@ -2,7 +2,7 @@ import React from 'react'
 import './Header.css'
 import RightSide from './RightSide/RightSide'
 
-import { AuthContext } from '@/app/auth/AuthProvider'
+import { AuthContext, } from '@/app/auth/AuthProvider'
 import Link from 'next/link'
 import RulesModal from '../RulesModal'
 

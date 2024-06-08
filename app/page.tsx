@@ -13,7 +13,7 @@ function App() {
           <span className='text-4xl text-secondary font-bold'>tuggr</span>
           <div className='text-xl mt-6'>~ a tug of war word game ~</div>
         </h1>
-        <div className='relative h-64'><Image src="/images/tuggr-vs.png" alt="tuggr tugboats" fill sizes='50vw' style={{ objectFit: 'contain' }} /></div>
+        <div className='relative h-64'><Image src="/images/tuggr-vs.png" alt="tuggr tugboats" fill sizes='50vw' style={{ objectFit: 'contain', }} /></div>
       </div>
     </div>
   )

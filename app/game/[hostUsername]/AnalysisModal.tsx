@@ -1,7 +1,7 @@
 import gameStrings from '@/app/constants/strings/gameStrings'
-import { wordInfo } from '@/app/types/GameListTypes'
-import { convertToMinutesAndSeconds } from '@/utils/functions'
-import { FaFlag, FaRegFlag } from 'react-icons/fa6'
+import { wordInfo, } from '@/app/types/GameListTypes'
+import { convertToMinutesAndSeconds, } from '@/utils/functions'
+import { FaFlag, FaRegFlag, } from 'react-icons/fa6'
 
 const AnalysisModal = (props: { id: string, wordHistory: wordInfo[], matchTime: number }) => {
   function handleCancel() {
