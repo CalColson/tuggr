@@ -1,5 +1,5 @@
 export interface GameListGame {
-  id: number,
+  id?: number,
   hostUsername: string,
   rating: number,
   time: number,

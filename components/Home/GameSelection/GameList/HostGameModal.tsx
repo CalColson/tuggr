@@ -1,11 +1,13 @@
 import { AuthContext, } from '@/app/auth/AuthProvider'
 import signals from '@/app/constants/strings/signals'
 import socket from '@/app/socket'
+import { AuthUser, } from '@/app/types/AuthUser'
 import { HostGameArgs, } from '@/app/types/HostGameArgs'
+import { ensureUser, } from '@/utils/supabase/client'
 import React, { useContext, useEffect, useRef, } from 'react'
 
 const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
-  const { user, } = useContext(AuthContext)
+  const { user, setUser, } = useContext(AuthContext)
   user?.user_metadata
   const ref = useRef<HTMLDialogElement>(null)
 
@@ -22,13 +24,16 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
     modal.close()
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
+    const ensuredUser = await ensureUser(user, setUser) as AuthUser
     const hostGameArgs: HostGameArgs = {
-      hostDisplayName: user?.user_metadata.display_name as string,
-      rating: user?.user_metadata.rating as number,
+      hostDisplayName: ensuredUser.user_metadata.display_name as string,
+      rating: ensuredUser.user_metadata.rating as number,
       timeControl: parseInt((document.getElementById('host-time-control') as HTMLSelectElement).value),
     }
+    // console.log('hostGameArgs:', hostGameArgs)
     socket.emit(signals.client.hostGame, hostGameArgs)
+    handleCancel()
   }
 
   return (

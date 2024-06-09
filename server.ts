@@ -8,7 +8,8 @@ import { HostGameArgs, } from './app/types/HostGameArgs'
 import signals from './app/constants/strings/signals.js'
 import { getWordList, } from './utils/fileHandler.js'
 import { getRandomArrElement, getRandomArrElements, } from './utils/functions.js'
-import { createBrowserClient, } from '@supabase/ssr'
+import { GameListGame, } from './app/types/GameListTypes'
+import { createClient, } from '@supabase/supabase-js'
 
 // remember to remove this
 // const TEST_GAME: GameListGame = {
@@ -40,18 +41,16 @@ const wordList = getWordList()
 const app = next({ dev, hostname, port, })
 const handler = app.getRequestHandler()
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
   const httpServer = createServer(handler)
   const io = new Server(httpServer)
-  const supabase = createBrowserClient(
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
   supabase.auth.signInWithPassword({
     email: process.env.ADMIN_EMAIL!,
     password: process.env.ADMIN_PASSWORD!,
-  }).then(res => {
-    // console.log(res)
   })
 
   // in-memory store for games
@@ -79,39 +78,29 @@ app.prepare().then(() => {
       console.log(socket.id + ' hosted game with args:')
       console.dir(hostGameArgs)
 
-      const game: TuggrGame = {
+      const game: GameListGame = {
         hostUsername: hostGameArgs.hostDisplayName,
         rating: hostGameArgs.rating,
         time: hostGameArgs.timeControl,
-        isInProgress: false,
-        hasGameStarted: false,
-        currentWord: '',
-        isHostsTurn: true,
-        isBeingRewarded: false,
-        isBeingPenalized: false,
-        hostTime: hostGameArgs.timeControl,
-        startTime: null,
-        endTime: null,
-        timerInterval: null,
-        lastTimeUpdateTimestamp: 0,
-        rematchCount: 0,
-        wordHistory: [],
       }
-      if (!games.some(g => g.hostUsername === game.hostUsername)) games.unshift(game)
-      else {
-        const newGames = games.filter(g => g.hostUsername !== game.hostUsername)
-        newGames.unshift(game)
-        games = newGames
-      }
+      supabase.from('game_list_games').insert<GameListGame>(game).then(({ data, error, }) => {
+        if (error) {
+          console.error(error)
+        }
+      })
 
-      socket.join(game.hostUsername)
-      io.emit(signals.server.gameHosted, getOpenGames())
+
+      // socket.join(game.hostUsername)
+      // io.emit(signals.server.gameHosted, getOpenGames())
     })
 
     socket.on(signals.client.deleteHostedGame, (username) => {
-      console.log(socket.id + ' deleted hosted game')
-      games = games.filter(game => game.hostUsername !== username)
-      io.emit(signals.server.gamesSent, getOpenGames())
+      console.log(username + ' deleted hosted game')
+      supabase.from('game_list_games').delete().eq('hostUsername', username).select<'id', GameListGame>('id').then(({ data, error, }) => {
+        if (error) {
+          console.error(error)
+        } else console.log(data)
+      })
     })
 
     socket.on(signals.client.joinGame, (hostUsername) => {

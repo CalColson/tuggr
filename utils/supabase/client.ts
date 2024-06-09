@@ -3,13 +3,13 @@ import { AuthUser, } from '@/app/types/AuthUser'
 import { createBrowserClient, } from '@supabase/ssr'
 import { animals, colors, uniqueNamesGenerator, } from 'unique-names-generator'
 
-const supabase = createBrowserClient(
+export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 )
 
 // only generates an anonymous user if the current client has no user
-const generateAnonUser = async () => {
+export const generateAnonUser = async () => {
   const res = await supabase.auth.getUser()
   if (!res.data?.user) {
     const randomName = uniqueNamesGenerator({ dictionaries: [colors, animals,], })
@@ -26,4 +26,10 @@ const generateAnonUser = async () => {
   } else return null
 }
 
-export { supabase, generateAnonUser, }
+export const ensureUser = async (user: AuthUser | null, setUser: (user: AuthUser | null) => void) => {
+  if (!user) {
+    const anonUser = await generateAnonUser()
+    setUser(anonUser)
+    return anonUser
+  } else return user
+}

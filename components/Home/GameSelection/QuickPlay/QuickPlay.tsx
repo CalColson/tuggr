@@ -4,27 +4,26 @@ import signals from '@/app/constants/strings/signals'
 import socket from '@/app/socket'
 import { AuthUser, } from '@/app/types/AuthUser'
 import { HostGameArgs, } from '@/app/types/HostGameArgs'
-import { generateAnonUser, } from '@/utils/supabase/client'
+import { ensureUser, supabase, } from '@/utils/supabase/client'
 import React, { useContext, } from 'react'
 
 const QuickPlay = ({ setSelectedTab, }: { setSelectedTab: React.Dispatch<React.SetStateAction<string>> }) => {
   const { user, setUser, } = useContext(AuthContext)
 
-  async function ensureUser() {
-    if (!user) {
-      const anonUser = await generateAnonUser()
-      setUser(anonUser)
-      return anonUser
-    } else return user
-  }
   async function handleAnyClick(timeControl: number | null = null) {
-    const ensuredUser = await ensureUser()
+    const ensuredUser = await ensureUser(user, setUser)
     // TODO: try to find an existing game to join
 
     // TODO: if no game found, create a new game
+    let rating: number
+    if (ensuredUser!.is_anonymous) rating = ensuredUser?.user_metadata.rating as number
+    else {
+      rating = (await supabase.from('users').select<'rating', { rating: number }>('rating').eq('auth_id', ensuredUser?.id)).data![0].rating
+    }
+
     const hostGameArgs: HostGameArgs = {
       hostDisplayName: ensuredUser?.user_metadata.display_name as string,
-      rating: ensuredUser?.user_metadata.rating as number,
+      rating: rating,
       timeControl: timeControl ?? DEFAULT_TIME_CONTROL,
     }
     socket.emit(signals.client.hostGame, hostGameArgs)

@@ -20,6 +20,7 @@ const GameList = () => {
 
   const MODAL_ID = 'host-game-modal'
 
+
   function handleJoinGame(hostUsername: string) {
     socket.emit(signals.client.joinGame, hostUsername)
 
@@ -30,6 +31,24 @@ const GameList = () => {
   }
   function handleDeleteHostedGame() {
     socket.emit(signals.client.deleteHostedGame, user?.user_metadata.display_name)
+  }
+  function getGameListRowJsx(index: number, game: GameListGame) {
+    return (
+      <tr key={index}>
+        <td>{game.hostUsername}</td>
+        <td>{game.rating}</td>
+        <td>{game.time}</td>
+        <td className="text-center max-w-14 py-2">
+          {game.hostUsername == user?.user_metadata.display_name ? (
+            <button onClick={handleDeleteHostedGame}
+              className='btn btn-error w-full'>cancel</button>
+          ) : (
+            <button onClick={() => handleJoinGame(game.hostUsername)}
+              className='btn btn-success w-full'>join</button>
+          )}
+        </td>
+      </tr>
+    )
   }
 
   // used to check if scrollbar is visible in useEffect and also when adding/subtracting new games
@@ -62,8 +81,6 @@ const GameList = () => {
     })
   }, [])
   useEffect(() => {
-
-
     const channel = supabase
       .channel('game_list_games')
       .on<GameListGame>('postgres_changes', { event: '*', schema: 'public', table: 'game_list_games', }, (payload) => {
@@ -80,26 +97,16 @@ const GameList = () => {
     }
   }, [games,])
   useEffect(() => {
-
-    function handleGameHosted(newGames: GameListGame[]) {
-      setGames(newGames)
-      const modal = document.getElementById(MODAL_ID) as HTMLDialogElement
-      modal.close()
-    }
     function handleGameJoined(game: GameListGame) {
       console.log('joined game: ' + game.hostUsername)
       router.push(`/game/${game.hostUsername}?time=${game.time}`)
 
     }
 
-    socket.on(signals.server.gamesSent, setGames)
-    socket.on(signals.server.gameHosted, handleGameHosted)
     socket.on(signals.server.gameJoined, handleGameJoined)
 
     socket.emit(signals.client.getGames)
     return () => {
-      socket.off(signals.server.gamesSent, setGames)
-      socket.off(signals.server.gameHosted, handleGameHosted)
       socket.off(signals.server.gameJoined, handleGameJoined)
     }
   }, [router,])
@@ -117,23 +124,13 @@ const GameList = () => {
             </tr>
           </thead>
           <tbody>
+            {
+              games.find(game => game.hostUsername == user?.user_metadata.display_name) &&
+              getGameListRowJsx(-1, games.find(game => game.hostUsername == user?.user_metadata.display_name) as GameListGame)
+            }
             {games.map((game, index) => {
-              return (
-                <tr key={index}>
-                  <td>{game.hostUsername}</td>
-                  <td>{game.rating}</td>
-                  <td>{game.time}</td>
-                  <td className="text-center max-w-14 py-2">
-                    {game.hostUsername == user?.user_metadata.display_name ? (
-                      <button onClick={handleDeleteHostedGame}
-                        className='btn btn-error w-full'>cancel</button>
-                    ) : (
-                      <button onClick={() => handleJoinGame(game.hostUsername)}
-                        className='btn btn-success w-full'>join</button>
-                    )}
-                  </td>
-                </tr>
-              )
+              if (game.hostUsername != user?.user_metadata.display_name)
+                return getGameListRowJsx(index, game)
             })}
           </tbody>
         </table>
