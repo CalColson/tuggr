@@ -7,9 +7,9 @@ import gameStrings from '@/app/constants/strings/gameStrings'
 import { useSearchParams, } from 'next/navigation'
 import socket from '@/app/socket'
 import signals from '@/app/constants/strings/signals'
-import { GameListGame, wordInfo, } from '@/app/types/GameListTypes'
 import '../Game.css'
 import AnalysisModal from './AnalysisModal'
+import { TuggrGame, wordInfo, } from '@/app/types/GameTypes'
 
 function Game({ params, }: { params: { hostUsername: string } }) {
   const [ellipsisAnimation, setEllipsisAnimation,] = useState('...')
@@ -41,8 +41,25 @@ function Game({ params, }: { params: { hostUsername: string } }) {
   // set isHost and isMyTurn
   useEffect(() => {
     setIsHost(user?.user_metadata.display_name === params.hostUsername)
-    setIsMyTurn(isHost)
-  }, [isHost, params.hostUsername, user,])
+    if (user) socket.emit(signals.client.getRefresh, params.hostUsername)
+  }, [params.hostUsername, user,])
+
+  // refresh currentWord and isMyTurn on tab refocus
+  useEffect(() => {
+    const onFocus = () => {
+      // console.log('tab focused')
+      socket.emit(signals.client.getRefresh, params.hostUsername)
+    }
+
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [params.hostUsername,])
+  // for bug hunting
+  // useEffect(() => {
+  //   console.log('isMyTurn: ' + isMyTurn)
+  // }, [isMyTurn,])
 
   // clean up suggested word after fading out
   useEffect(() => {
@@ -149,6 +166,10 @@ function Game({ params, }: { params: { hostUsername: string } }) {
     }
     document.addEventListener('keypress', handleKeyPress)
 
+    socket.on(signals.server.sentRefresh, (curWord: string, isHostsTurn: boolean) => {
+      setCurrentWord(curWord)
+      if (user) setIsMyTurn(isHost ? isHostsTurn : !isHostsTurn)
+    })
     socket.on(signals.server.wordUpdated, (word: string,
       isHostsTurn: boolean,
       isValid: boolean,
@@ -199,7 +220,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       setRematchState(2)
     })
 
-    socket.on(signals.server.gameReset, (game: GameListGame) => {
+    socket.on(signals.server.gameReset, (game: TuggrGame) => {
       setRematchState(0)
       setIsGameEnded(false)
       setIsWinner(false)
@@ -215,6 +236,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       clearInterval(ellipsisInterval)
       clearInterval(underscoreInterval)
       document.removeEventListener('keypress', handleKeyPress)
+      socket.off(signals.server.sentRefresh)
       socket.off(signals.server.wordUpdated)
       socket.off(signals.server.wordAccepted)
       socket.off(signals.server.rewardEnded)
@@ -225,7 +247,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       socket.off(signals.server.rematchRequested)
       socket.off(signals.server.gameReset)
     }
-  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isLockedOut, isMyTurn, params.hostUsername,])
+  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isLockedOut, isMyTurn, params.hostUsername, user,])
 
 
   const gameContent = (

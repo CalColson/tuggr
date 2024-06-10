@@ -8,12 +8,12 @@ import HostGameModal from './HostGameModal'
 import { AuthContext, } from '@/app/auth/AuthProvider'
 import { useRouter, } from 'next/navigation'
 import signals from '@/app/constants/strings/signals'
-import { supabase, } from '@/utils/supabase/client'
+import { ensureUser, supabase, } from '@/utils/supabase/client'
 
 const GameList = () => {
   const [innerWidth, setInnerWidth,] = useState(0)
   const [isScrollVisible, setIsScrollVisible,] = useState(false)
-  const { user, } = useContext(AuthContext)
+  const { user, setUser } = useContext(AuthContext)
   const router = useRouter()
 
   const [games, setGames,] = useState<GameListGame[]>([])
@@ -21,8 +21,9 @@ const GameList = () => {
   const MODAL_ID = 'host-game-modal'
 
 
-  function handleJoinGame(hostUsername: string) {
-    socket.emit(signals.client.joinGame, hostUsername)
+  async function handleJoinGame(hostUsername: string) {
+    const ensuredUser = await ensureUser(user, setUser)
+    socket.emit(signals.client.joinGame, hostUsername, ensuredUser?.user_metadata.display_name)
 
   }
   function handleHostGame() {
@@ -105,7 +106,6 @@ const GameList = () => {
 
     socket.on(signals.server.gameJoined, handleGameJoined)
 
-    socket.emit(signals.client.getGames)
     return () => {
       socket.off(signals.server.gameJoined, handleGameJoined)
     }

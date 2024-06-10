@@ -5,6 +5,7 @@ import { supabase, } from '@/utils/supabase/client'
 import Header from '@/components/Header/Header'
 import socket from '../socket'
 import { AuthUser, } from '../types/AuthUser'
+import signals from '../constants/strings/signals'
 
 export const AuthContext = createContext<{
   user: AuthUser | null;
@@ -47,6 +48,11 @@ const AuthProvider = ({
       }
       if (event === 'SIGNED_OUT') {
         console.log(`user ${user?.user_metadata.display_name} signed out`)
+      }
+
+      // socket might not be connected yet... although it probably should be... but beware race condition... refactor later
+      if (session) {
+        socket.emit(signals.client.checkForActiveGame, session.user.user_metadata.display_name)
       }
     })
 

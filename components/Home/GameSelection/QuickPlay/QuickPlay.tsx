@@ -14,7 +14,6 @@ const QuickPlay = ({ setSelectedTab, }: { setSelectedTab: React.Dispatch<React.S
     const ensuredUser = await ensureUser(user, setUser)
     // TODO: try to find an existing game to join
 
-    // TODO: if no game found, create a new game
     let rating: number
     if (ensuredUser!.is_anonymous) rating = ensuredUser?.user_metadata.rating as number
     else {

@@ -48,13 +48,13 @@ app.prepare().then(async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
-  supabase.auth.signInWithPassword({
+  await supabase.auth.signInWithPassword({
     email: process.env.ADMIN_EMAIL!,
     password: process.env.ADMIN_PASSWORD!,
   })
 
-  // in-memory store for games
-  let games: TuggrGame[] = []
+  // in-memory store for active games
+  const games: TuggrGame[] = []
   // the fraction of the time control to reward/penalize the player for a valid/invalid word
   // e.g. a value of 3 means the player will lose 1/3 of their starting time for an invalid word
   const DEFAULT_REWARD = 6
@@ -63,16 +63,9 @@ app.prepare().then(async () => {
   const DEFAULT_REWARD_FREEZE_TIME = 1
   const DEFAULT_PENALTY_FREEZE_TIME = 1
 
-  function getOpenGames() {
-    return games.filter(g => !g.isInProgress)
-  }
 
   io.on('connection', (socket) => {
     console.log(socket.id + ' connected')
-
-    socket.on(signals.client.getGames, () => {
-      io.emit(signals.server.gamesSent, getOpenGames())
-    })
 
     socket.on(signals.client.hostGame, (hostGameArgs: HostGameArgs) => {
       console.log(socket.id + ' hosted game with args:')
@@ -86,35 +79,74 @@ app.prepare().then(async () => {
       supabase.from('game_list_games').insert<GameListGame>(game).then(({ data, error, }) => {
         if (error) {
           console.error(error)
+          return
         }
+
+        socket.join(game.hostUsername)
+        games.push({
+          hostUsername: game.hostUsername,
+          challengerUsername: null,
+          rating: game.rating,
+          time: game.time,
+          hasGameStarted: false,
+          currentWord: '',
+          isHostsTurn: true,
+          isBeingRewarded: false,
+          isBeingPenalized: false,
+          hostTime: game.time,
+          startTime: null,
+          endTime: null,
+          timerInterval: null,
+          lastTimeUpdateTimestamp: 0,
+          rematchCount: 0,
+          wordHistory: [],
+        })
       })
-
-
-      // socket.join(game.hostUsername)
-      // io.emit(signals.server.gameHosted, getOpenGames())
     })
 
-    socket.on(signals.client.deleteHostedGame, (username) => {
+    socket.on(signals.client.deleteHostedGame, (username: string) => {
       console.log(username + ' deleted hosted game')
       supabase.from('game_list_games').delete().eq('hostUsername', username).select<'id', GameListGame>('id').then(({ data, error, }) => {
         if (error) {
           console.error(error)
-        } else console.log(data)
+          return
+        }
+        const index = games.findIndex(g => g.hostUsername === username)
+        if (index !== -1) games.splice(index, 1)
+        socket.leave(username)
       })
     })
 
-    socket.on(signals.client.joinGame, (hostUsername) => {
-      socket.join(hostUsername)
+    socket.on(signals.client.joinGame, (hostUsername: string, username: string) => {
       // console.log(io.sockets.adapter.rooms.get(hostUsername))
       const game = games.find(g => g.hostUsername === hostUsername)
-      if (game) game.isInProgress = true
-      io.emit(signals.server.gamesSent, getOpenGames())
-      io.to(hostUsername).emit(signals.server.gameJoined, game)
+      if (game) {
+        socket.join(hostUsername)
+        game.challengerUsername = username
+
+        io.to(hostUsername).emit(signals.server.gameJoined, game)
+
+        supabase.from('game_list_games').delete().eq('hostUsername', hostUsername).select<'id', GameListGame>('id').then(({ data, error, }) => {
+          if (error) {
+            console.error(error)
+            return
+          }
+        })
+      } else console.error('game not found')
     })
 
-    socket.on(signals.client.ensureGameJoined, (hostUsername) => {
-      socket.join(hostUsername)
-      console.log(io.sockets.adapter.rooms.get(hostUsername))
+    socket.on(signals.client.checkForActiveGame, (username: string) => {
+      const game = games.find(g => g.hostUsername === username || g.challengerUsername === username)
+      if (game) {
+        socket.join(game.hostUsername)
+      }
+    })
+
+    socket.on(signals.client.getRefresh, (hostUsername: string) => {
+      const game = games.find(g => g.hostUsername === hostUsername)
+      if (game) {
+        socket.emit(signals.server.sentRefresh, game.currentWord, game.isHostsTurn)
+      }
     })
 
     socket.on(signals.client.startGame, () => {

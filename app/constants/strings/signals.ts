@@ -1,11 +1,11 @@
 const signals = {
   // client-sent signals
   client: {
-    getGames: 'get-games',
     hostGame: 'host-game',
     deleteHostedGame: 'delete-hosted-game',
     joinGame: 'join-game',
-    ensureGameJoined: 'ensure-game-joined',
+    checkForActiveGame: 'check-for-active-game',
+    getRefresh: 'get-refresh',
     startGame: 'start-game',
     inputMove: 'input-move',
     inputWord: 'input-word',
@@ -16,9 +16,8 @@ const signals = {
 
   // server-sent signals
   server: {
-    gamesSent: 'games-sent',
-    gameHosted: 'game-hosted',
     gameJoined: 'game-joined',
+    sentRefresh: 'sent-refresh',
     wordUpdated: 'word-updated',
     wordAccepted: 'word-accepted',
     rewardEnded: 'reward-ended',
