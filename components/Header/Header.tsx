@@ -5,9 +5,13 @@ import RightSide from './RightSide/RightSide'
 import { AuthContext, } from '@/app/auth/AuthProvider'
 import Link from 'next/link'
 import RulesModal from '../RulesModal'
+import { useNavigationEvent, } from '@/app/hooks/useNavigationEvent'
 
 const Header = () => {
   const RULES_MODAL_ID = 'rules-modal'
+
+  useNavigationEvent(() => { })
+
   function onRulesClick() {
     const modal = document.getElementById(RULES_MODAL_ID) as HTMLDialogElement
     const modalContent = modal.querySelector('.modal-box') as HTMLElement

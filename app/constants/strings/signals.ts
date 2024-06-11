@@ -12,6 +12,7 @@ const signals = {
     getAnalysis: 'get-analysis',
     requestRematch: 'request-rematch',
     acceptRematch: 'accept-rematch',
+    leaveGame: 'leave-game',
   },
 
   // server-sent signals
@@ -27,6 +28,8 @@ const signals = {
     analysisSent: 'analysis-sent',
     rematchRequested: 'rematch-requested',
     gameReset: 'game-reset',
+    opponentDisconnected: 'opponent-disconnected',
+    activeGameFound: 'active-game-found',
   },
 }
 

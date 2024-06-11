@@ -12,7 +12,7 @@ import { GameListGame, } from './app/types/GameListTypes'
 import { createClient, } from '@supabase/supabase-js'
 
 // remember to remove this
-// const TEST_GAME: GameListGame = {
+// const TEST_GAME: TuggrGame = {
 //   hostUsername: 'apparent_amethyst_walrus',
 //   rating: 1000,
 //   time: 5,
@@ -118,7 +118,7 @@ app.prepare().then(async () => {
     })
 
     socket.on(signals.client.joinGame, (hostUsername: string, username: string) => {
-      // console.log(io.sockets.adapter.rooms.get(hostUsername))
+      console.log(username + ' joined game hosted by ' + hostUsername)
       const game = games.find(g => g.hostUsername === hostUsername)
       if (game) {
         socket.join(hostUsername)
@@ -136,16 +136,23 @@ app.prepare().then(async () => {
     })
 
     socket.on(signals.client.checkForActiveGame, (username: string) => {
+      // console.log('checked for active game: ' + username)
       const game = games.find(g => g.hostUsername === username || g.challengerUsername === username)
-      if (game) {
+      if (game && !isGameOver(game)) {
+        console.log('found active game: ' + username)
+        // this might cause bugs... but hopefully it only gets called when user is on game page... think about removing if there are issues
         socket.join(game.hostUsername)
+        socket.emit(signals.server.activeGameFound, game.hostUsername)
       }
     })
 
     socket.on(signals.client.getRefresh, (hostUsername: string) => {
+      // console.log('refresh requested for: ' + hostUsername)
       const game = games.find(g => g.hostUsername === hostUsername)
       if (game) {
-        socket.emit(signals.server.sentRefresh, game.currentWord, game.isHostsTurn)
+        // timerInterval is not safe to send to emit to the client, as it creates a circular structure
+        // because of this, we cannot emit the game object directly
+        socket.emit(signals.server.sentRefresh, game.currentWord, game.isHostsTurn, game.hostTime, game.startTime, game.endTime, game.wordHistory)
       }
     })
 
@@ -165,7 +172,7 @@ app.prepare().then(async () => {
           if (game.isHostsTurn) game.hostTime -= timeElapsed
           else game.hostTime += timeElapsed
           game.lastTimeUpdateTimestamp = currentTime
-          if (game.hostTime <= 0 || game.hostTime >= game.time * 2) {
+          if (isGameOver(game)) {
             if (game.timerInterval) {
               clearInterval(game.timerInterval)
               game.timerInterval = null
@@ -328,8 +335,54 @@ app.prepare().then(async () => {
       }
     })
 
+    socket.on(signals.client.leaveGame, async (hostUsername: string) => {
+      console.log(socket.id + ' left game hosted by ' + hostUsername)
+      await socket.leave(hostUsername)
+      const room = io.sockets.adapter.rooms.get(hostUsername)
+      if (room?.size === 0) {
+        const game = games.find(g => g.hostUsername === hostUsername)
+        if (game) {
+          games.splice(games.indexOf(game), 1)
+        }
+      }
+    })
+
     socket.on('disconnecting', () => {
       // can still access the socket.rooms property here
+      // console.log('socket rooms:', socket.rooms)
+
+      const roomName = Array.from(socket.rooms).find(r => r !== socket.id)
+      if (!roomName) return
+
+      // remove possible GameListGame from database
+      const game = games.find(g => g.hostUsername === roomName)
+      // checks to make sure the game is not yet joined (joining removes the game from the list on its own)
+      if (game && !game.challengerUsername) {
+        supabase.from('game_list_games').delete().eq('hostUsername', roomName).select<'id', GameListGame>('id').then(({ data, error, }) => {
+          if (error) {
+            console.error(error)
+            return
+          }
+        })
+        games.splice(games.indexOf(game), 1)
+      }
+
+      // console.log('room name:', roomName)
+      const room = io.sockets.adapter.rooms.get(roomName)
+      if (!room) return
+
+      if (room.size === 1) {
+        const game = games.find(g => g.hostUsername === roomName)
+        if (game) {
+          games.splice(games.indexOf(game), 1)
+        }
+      } else if (room.size >= 2) {
+        const otherSocket = Array.from(room).find(id => id !== socket.id)
+        if (!otherSocket) return
+
+        // console.log('other socket:', otherSocket)
+        io.to(otherSocket).emit(signals.server.opponentDisconnected)
+      }
     })
     socket.on('disconnect', () => {
       // can't access the socket.rooms property here (the rooms have been left already)
@@ -344,4 +397,7 @@ app.prepare().then(async () => {
 
 function getPossibleWords(word: string): string[] {
   return wordList.filter(w => w.startsWith(word))
+}
+function isGameOver(game: TuggrGame): boolean {
+  return game.hostTime <= 0 || game.hostTime >= game.time * 2
 }

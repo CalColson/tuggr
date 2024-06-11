@@ -1,6 +1,6 @@
 'use client'
 
-import { useContext, useEffect, useRef, useState, } from 'react'
+import { use, useContext, useEffect, useRef, useState, } from 'react'
 import TugBar from '@/components/TugBar/TugBar'
 import { AuthContext, } from '@/app/auth/AuthProvider'
 import gameStrings from '@/app/constants/strings/gameStrings'
@@ -40,26 +40,32 @@ function Game({ params, }: { params: { hostUsername: string } }) {
 
   // set isHost and isMyTurn
   useEffect(() => {
-    setIsHost(user?.user_metadata.display_name === params.hostUsername)
-    if (user) socket.emit(signals.client.getRefresh, params.hostUsername)
+    const isHost = user?.user_metadata.display_name === params.hostUsername
+    setIsHost(isHost)
+    if (!isHost) socket.emit(signals.client.getRefresh, params.hostUsername)
   }, [params.hostUsername, user,])
-
-  // refresh currentWord and isMyTurn on tab refocus
   useEffect(() => {
-    const onFocus = () => {
-      // console.log('tab focused')
-      socket.emit(signals.client.getRefresh, params.hostUsername)
-    }
+    if (isHost) socket.emit(signals.client.getRefresh, params.hostUsername)
+  }, [isHost, params.hostUsername,])
 
-    window.addEventListener('focus', onFocus)
-    return () => {
-      window.removeEventListener('focus', onFocus)
-    }
-  }, [params.hostUsername,])
+  // remove everything below if no bugs are found in next few commits
+  // refresh currentWord and isMyTurn on tab refocus
+  // useEffect(() => {
+  //   const onFocus = () => {
+  //     // console.log('tab focused')
+  //     // socket.emit(signals.client.getRefresh, params.hostUsername)
+  //   }
+
+  //   window.addEventListener('focus', onFocus)
+  //   return () => {
+  //     window.removeEventListener('focus', onFocus)
+  //   }
+  // }, [params.hostUsername,])
   // for bug hunting
   // useEffect(() => {
   //   console.log('isMyTurn: ' + isMyTurn)
   // }, [isMyTurn,])
+  // remove everything above if no bugs are found in next few commits
 
   // clean up suggested word after fading out
   useEffect(() => {
@@ -166,9 +172,21 @@ function Game({ params, }: { params: { hostUsername: string } }) {
     }
     document.addEventListener('keypress', handleKeyPress)
 
-    socket.on(signals.server.sentRefresh, (curWord: string, isHostsTurn: boolean) => {
-      setCurrentWord(curWord)
-      if (user) setIsMyTurn(isHost ? isHostsTurn : !isHostsTurn)
+    socket.on(signals.server.sentRefresh, (currentWord, isHostsTurn, hostTime, startTime, endTime, wordHistory) => {
+      setCurrentWord(currentWord)
+      setBlueTime(hostTime)
+      if (user) {
+        // console.log(user)
+        // console.log('received refresh', isHostsTurn, isHost)
+        setIsMyTurn(isHost ? isHostsTurn : !isHostsTurn)
+        if (endTime) {
+          const isWinner = (isHost && hostTime > 0) || (!isHost && hostTime <= 0)
+          setIsWinner(isWinner)
+          setIsGameEnded(true)
+          setWordHistory(wordHistory)
+          setMatchTime(endTime - startTime!)
+        }
+      }
     })
     socket.on(signals.server.wordUpdated, (word: string,
       isHostsTurn: boolean,
@@ -232,6 +250,10 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       hasGameStarted.current = false
     })
 
+    socket.on(signals.server.opponentDisconnected, () => {
+      setRematchState(0)
+    })
+
     return () => {
       clearInterval(ellipsisInterval)
       clearInterval(underscoreInterval)
@@ -246,6 +268,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       socket.off(signals.server.analysisSent)
       socket.off(signals.server.rematchRequested)
       socket.off(signals.server.gameReset)
+      socket.off(signals.server.opponentDisconnected)
     }
   }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isLockedOut, isMyTurn, params.hostUsername, user,])
 

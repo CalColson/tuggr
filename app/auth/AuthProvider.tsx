@@ -1,11 +1,12 @@
 'use client'
 
-import { createContext, useEffect, useRef, useState, } from 'react'
+import { createContext, useEffect, useState, } from 'react'
 import { supabase, } from '@/utils/supabase/client'
 import Header from '@/components/Header/Header'
 import socket from '../socket'
 import { AuthUser, } from '../types/AuthUser'
 import signals from '../constants/strings/signals'
+import { usePathname, } from 'next/navigation'
 
 export const AuthContext = createContext<{
   user: AuthUser | null;
@@ -21,6 +22,8 @@ const AuthProvider = ({
   children: React.ReactNode;
 }) => {
   const [user, setUser,] = useState<AuthUser | null>(null)
+
+  const currentRoute = usePathname()
 
   useEffect(() => {
     // I leverage this expression here simply to connect the socket, as AuthProvider wraps the entire app
@@ -52,14 +55,28 @@ const AuthProvider = ({
 
       // socket might not be connected yet... although it probably should be... but beware race condition... refactor later
       if (session) {
-        socket.emit(signals.client.checkForActiveGame, session.user.user_metadata.display_name)
+        if (currentRoute.startsWith('/game/')) {
+          socket.emit(signals.client.checkForActiveGame, session.user.user_metadata.display_name)
+        }
       }
     })
 
     return () => {
       authListener?.subscription.unsubscribe()
     }
-  }, [])
+  }, [currentRoute,])
+  useEffect(() => {
+    function onActiveGameFoundGlobal(hostUsername: string) {
+      // this can happen either when in an active game w/ a refresh, or on another page, which means we should show an alert and redirect to the game page. this function is for the latter case.
+      // TODO: handle active game found
+      console.log('current route:', currentRoute)
+    }
+    socket.on(signals.server.activeGameFound, onActiveGameFoundGlobal)
+
+    return () => {
+      socket.off(signals.server.activeGameFound, onActiveGameFoundGlobal)
+    }
+  }, [currentRoute,])
   return (
     <AuthContext.Provider value={{ user, setUser, }}>
       <Header />
