@@ -1,0 +1,11 @@
+tuggr architecture:
+
+	user flows (numbers indicate user actions or ui changes):
+		default: 
+		1. user lands on home page
+		2. user clicks on quick-play button
+		3a. matchmaking successfully joins user to a game created by another user
+		3b. if a suitable game is not found, then a new game is created and user is shown the lobby (with their open game) while an opponent is waited for
+		4. both users are routed to the game page
+		5. randomly chosen user will be able to start the game (if they do not within 30 secs, the game is a draw)
+		6. game is played out

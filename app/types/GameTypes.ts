@@ -1,4 +1,5 @@
 export interface TuggrGame {
+  id: string,
   hostUsername: string,
   challengerUsername: string | null,
   rating: number,

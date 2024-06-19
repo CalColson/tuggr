@@ -13,7 +13,7 @@ import { ensureUser, supabase, } from '@/utils/supabase/client'
 const GameList = () => {
   const [innerWidth, setInnerWidth,] = useState(0)
   const [isScrollVisible, setIsScrollVisible,] = useState(false)
-  const { user, setUser } = useContext(AuthContext)
+  const { user, setUser, } = useContext(AuthContext)
   const router = useRouter()
 
   const [games, setGames,] = useState<GameListGame[]>([])

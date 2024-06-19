@@ -10,6 +10,7 @@ import { getWordList, } from './utils/fileHandler.js'
 import { getRandomArrElement, getRandomArrElements, } from './utils/functions.js'
 import { GameListGame, } from './app/types/GameListTypes'
 import { createClient, } from '@supabase/supabase-js'
+import { randomUUID, } from 'node:crypto'
 
 // remember to remove this
 // const TEST_GAME: TuggrGame = {
@@ -82,8 +83,11 @@ app.prepare().then(async () => {
           return
         }
 
+        const gameId = randomUUID()
+
         socket.join(game.hostUsername)
         games.push({
+          id: gameId,
           hostUsername: game.hostUsername,
           challengerUsername: null,
           rating: game.rating,
