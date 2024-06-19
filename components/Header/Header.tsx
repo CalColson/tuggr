@@ -2,10 +2,10 @@ import React from 'react'
 import './Header.css'
 import RightSide from './RightSide/RightSide'
 
-import { AuthContext, } from '@/app/auth/AuthProvider'
+import { AuthContext } from '@/app/auth/AuthProvider'
 import Link from 'next/link'
 import RulesModal from '../RulesModal'
-import { useNavigationEvent, } from '@/app/hooks/useNavigationEvent'
+import { useNavigationEvent } from '@/app/hooks/useNavigationEvent'
 
 const Header = () => {
   const RULES_MODAL_ID = 'rules-modal'

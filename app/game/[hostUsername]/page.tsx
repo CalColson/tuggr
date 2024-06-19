@@ -1,39 +1,39 @@
 'use client'
 
-import { use, useContext, useEffect, useRef, useState, } from 'react'
+import { use, useContext, useEffect, useRef, useState } from 'react'
 import TugBar from '@/components/TugBar/TugBar'
-import { AuthContext, } from '@/app/auth/AuthProvider'
+import { AuthContext } from '@/app/auth/AuthProvider'
 import gameStrings from '@/app/constants/strings/gameStrings'
-import { useSearchParams, } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import socket from '@/app/socket'
 import signals from '@/app/constants/strings/signals'
 import '../Game.css'
 import AnalysisModal from './AnalysisModal'
-import { TuggrGame, wordInfo, } from '@/app/types/GameTypes'
+import { TuggrGame, wordInfo } from '@/app/types/GameTypes'
 
-function Game({ params, }: { params: { hostUsername: string } }) {
-  const [ellipsisAnimation, setEllipsisAnimation,] = useState('...')
-  const [isUnderscoreTransparent, setIsUnderscoreTransparent,] = useState(false)
+function Game({ params }: { params: { hostUsername: string } }) {
+  const [ellipsisAnimation, setEllipsisAnimation] = useState('...')
+  const [isUnderscoreTransparent, setIsUnderscoreTransparent] = useState(false)
 
-  const { user, } = useContext(AuthContext)
-  const [isHost, setIsHost,] = useState(user?.user_metadata.display_name === params.hostUsername)
-  const [isMyTurn, setIsMyTurn,] = useState(isHost)
-  const [isLockedOut, setIsLockedOut,] = useState(false)
-  const [isBeingRewarded, setIsBeingRewarded,] = useState(false)
-  const [isBeingPenalized, setIsBeingPenalized,] = useState(false)
-  const [currentWord, setCurrentWord,] = useState('')
-  const [suggestedWord, setSuggestedWord,] = useState('')
-  const [isGameEnded, setIsGameEnded,] = useState(false)
-  const [isWinner, setIsWinner,] = useState(false)
-  const [wordHistory, setWordHistory,] = useState<wordInfo[]>([])
-  const [matchTime, setMatchTime,] = useState(0)
+  const { user } = useContext(AuthContext)
+  const [isHost, setIsHost] = useState(user?.user_metadata.display_name === params.hostUsername)
+  const [isMyTurn, setIsMyTurn] = useState(isHost)
+  const [isLockedOut, setIsLockedOut] = useState(false)
+  const [isBeingRewarded, setIsBeingRewarded] = useState(false)
+  const [isBeingPenalized, setIsBeingPenalized] = useState(false)
+  const [currentWord, setCurrentWord] = useState('')
+  const [suggestedWord, setSuggestedWord] = useState('')
+  const [isGameEnded, setIsGameEnded] = useState(false)
+  const [isWinner, setIsWinner] = useState(false)
+  const [wordHistory, setWordHistory] = useState<wordInfo[]>([])
+  const [matchTime, setMatchTime] = useState(0)
 
-  const [gameEndedContent, setGameEndedContent,] = useState(<></>)
+  const [gameEndedContent, setGameEndedContent] = useState(<></>)
   // state 0: no rematch request, state 1: rematch request sent, state 2: rematch request received
-  const [rematchState, setRematchState,] = useState(0)
+  const [rematchState, setRematchState] = useState(0)
 
   const timeControl = useSearchParams().get('time')
-  const [blueTime, setBlueTime,] = useState(timeControl ? parseInt(timeControl) : 69)
+  const [blueTime, setBlueTime] = useState(timeControl ? parseInt(timeControl) : 69)
   const hasGameStarted = useRef(false)
 
   const MODAL_ID = 'analysis-modal'
@@ -43,10 +43,10 @@ function Game({ params, }: { params: { hostUsername: string } }) {
     const isHost = user?.user_metadata.display_name === params.hostUsername
     setIsHost(isHost)
     if (!isHost) socket.emit(signals.client.getRefresh, params.hostUsername)
-  }, [params.hostUsername, user,])
+  }, [params.hostUsername, user])
   useEffect(() => {
     if (isHost) socket.emit(signals.client.getRefresh, params.hostUsername)
-  }, [isHost, params.hostUsername,])
+  }, [isHost, params.hostUsername])
 
   // remove everything below if no bugs are found in next few commits
   // refresh currentWord and isMyTurn on tab refocus
@@ -94,7 +94,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       void element.offsetWidth
       element.classList.add('toast-fade')
     }
-  }, [suggestedWord,])
+  }, [suggestedWord])
 
   // handle rematch state changes
   useEffect(() => {
@@ -131,7 +131,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
     if (rematchState === 0) setGameEndedContent(rematch0Content)
     else if (rematchState === 1) setGameEndedContent(rematch1Content)
     else if (rematchState === 2) setGameEndedContent(rematch2Content)
-  }, [rematchState,])
+  }, [rematchState])
 
   useEffect(() => {
     // setup ellipsis animation
@@ -270,7 +270,7 @@ function Game({ params, }: { params: { hostUsername: string } }) {
       socket.off(signals.server.gameReset)
       socket.off(signals.server.opponentDisconnected)
     }
-  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isLockedOut, isMyTurn, params.hostUsername, user,])
+  }, [currentWord.length, isBeingPenalized, isBeingRewarded, isHost, isLockedOut, isMyTurn, params.hostUsername, user])
 
 
   const gameContent = (

@@ -12,7 +12,7 @@
     ],
     "comma-dangle": [
       "error",
-      "always"
+      "never"
     ]
   }
 }

@@ -1,27 +1,27 @@
 'use client'
 
-import { createContext, useEffect, useState, } from 'react'
-import { supabase, } from '@/utils/supabase/client'
+import { createContext, useEffect, useState } from 'react'
+import { supabase } from '@/utils/supabase/client'
 import Header from '@/components/Header/Header'
 import socket from '../socket'
-import { AuthUser, } from '../types/AuthUser'
+import { AuthUser } from '../types/AuthUser'
 import signals from '../constants/strings/signals'
-import { usePathname, } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 export const AuthContext = createContext<{
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
 }>({
   user: null,
-  setUser: () => { },
+  setUser: () => { }
 })
 
 const AuthProvider = ({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) => {
-  const [user, setUser,] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
 
   const currentRoute = usePathname()
 
@@ -40,7 +40,7 @@ const AuthProvider = ({
       setUser(res.data.user as AuthUser | null)
     })
 
-    const { data: authListener, } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       // console.log(event)
       // console.log(session)
       const user = (session?.user as AuthUser | null) ?? null
@@ -64,7 +64,7 @@ const AuthProvider = ({
     return () => {
       authListener?.subscription.unsubscribe()
     }
-  }, [currentRoute,])
+  }, [currentRoute])
   useEffect(() => {
     function onActiveGameFoundGlobal(hostUsername: string) {
       // this can happen either when in an active game w/ a refresh, or on another page, which means we should show an alert and redirect to the game page. this function is for the latter case.
@@ -76,9 +76,9 @@ const AuthProvider = ({
     return () => {
       socket.off(signals.server.activeGameFound, onActiveGameFoundGlobal)
     }
-  }, [currentRoute,])
+  }, [currentRoute])
   return (
-    <AuthContext.Provider value={{ user, setUser, }}>
+    <AuthContext.Provider value={{ user, setUser }}>
       <Header />
       {children}
     </AuthContext.Provider>

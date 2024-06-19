@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { headers, } from 'next/headers'
-import { createClient, } from '@/utils/supabase/server'
-import { redirect, } from 'next/navigation'
-import { SubmitButton, } from './submit-button'
+import { headers } from 'next/headers'
+import { createClient } from '@/utils/supabase/server'
+import { redirect } from 'next/navigation'
+import { SubmitButton } from './submit-button'
 
 export default function Login({
-  searchParams,
+  searchParams
 }: {
   searchParams: { message: string };
 }) {
@@ -16,9 +16,9 @@ export default function Login({
     const password = formData.get('password') as string
     const supabase = createClient()
 
-    const { error, } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      password,
+      password
     })
 
     if (error) {
@@ -36,12 +36,12 @@ export default function Login({
     const password = formData.get('password') as string
     const supabase = createClient()
 
-    const { error, } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${origin}/auth/callback`,
-      },
+        emailRedirectTo: `${origin}/auth/callback`
+      }
     })
 
     if (error) {

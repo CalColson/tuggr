@@ -1,45 +1,25 @@
 import dotenv from 'dotenv'
-import { createServer, } from 'node:http'
+import { createServer } from 'node:http'
 import next from 'next'
-import { Server, } from 'socket.io'
-import { TuggrGame, } from './app/types/GameTypes'
-import { HostGameArgs, } from './app/types/HostGameArgs'
+import { Server } from 'socket.io'
+import { TuggrGame } from './app/types/GameTypes'
+import { HostGameArgs } from './app/types/HostGameArgs'
 // js extension is required for ts-node/esm to work
 import signals from './app/constants/strings/signals.js'
-import { getWordList, } from './utils/fileHandler.js'
-import { getRandomArrElement, getRandomArrElements, } from './utils/functions.js'
-import { GameListGame, } from './app/types/GameListTypes'
-import { createClient, } from '@supabase/supabase-js'
-import { randomUUID, } from 'node:crypto'
+import { getWordList } from './utils/fileHandler.js'
+import { getRandomArrElement, getRandomArrElements } from './utils/functions.js'
+import { GameListGame } from './app/types/GameListTypes'
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'node:crypto'
 
-// remember to remove this
-// const TEST_GAME: TuggrGame = {
-//   hostUsername: 'apparent_amethyst_walrus',
-//   rating: 1000,
-//   time: 5,
-//   isInProgress: true,
-//   hasGameStarted: false,
-//   currentWord: '',
-//   isHostsTurn: true,
-//   isBeingRewarded: false,
-//   isBeingPenalized: false,
-//   hostTime: 5,
-//   startTime: null,
-//   endTime: null,
-//   timerInterval: null,
-//   lastTimeUpdateTimestamp: 0,
-//   rematchCount: 0,
-//   wordHistory: [],
-// }
-
-dotenv.config({ path: './.env.local', })
+dotenv.config({ path: './.env.local' })
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = 3000
 
 const wordList = getWordList()
 
-const app = next({ dev, hostname, port, })
+const app = next({ dev, hostname, port })
 const handler = app.getRequestHandler()
 
 app.prepare().then(async () => {
@@ -51,7 +31,7 @@ app.prepare().then(async () => {
   )
   await supabase.auth.signInWithPassword({
     email: process.env.ADMIN_EMAIL!,
-    password: process.env.ADMIN_PASSWORD!,
+    password: process.env.ADMIN_PASSWORD!
   })
 
   // in-memory store for active games
@@ -65,19 +45,26 @@ app.prepare().then(async () => {
   const DEFAULT_PENALTY_FREEZE_TIME = 1
 
 
+  function getPossibleWords(word: string): string[] {
+    return wordList.filter(w => w.startsWith(word))
+  }
+  function isGameOver(game: TuggrGame): boolean {
+    return game.hostTime <= 0 || game.hostTime >= game.time * 2
+  }
+
   io.on('connection', (socket) => {
     console.log(socket.id + ' connected')
 
-    socket.on(signals.client.hostGame, (hostGameArgs: HostGameArgs) => {
+    function onHostGame(hostGameArgs: HostGameArgs) {
       console.log(socket.id + ' hosted game with args:')
       console.dir(hostGameArgs)
 
       const game: GameListGame = {
         hostUsername: hostGameArgs.hostDisplayName,
         rating: hostGameArgs.rating,
-        time: hostGameArgs.timeControl,
+        time: hostGameArgs.timeControl
       }
-      supabase.from('game_list_games').insert<GameListGame>(game).then(({ data, error, }) => {
+      supabase.from('game_list_games').insert<GameListGame>(game).then(({ data, error }) => {
         if (error) {
           console.error(error)
           return
@@ -103,14 +90,13 @@ app.prepare().then(async () => {
           timerInterval: null,
           lastTimeUpdateTimestamp: 0,
           rematchCount: 0,
-          wordHistory: [],
+          wordHistory: []
         })
       })
-    })
-
-    socket.on(signals.client.deleteHostedGame, (username: string) => {
+    }
+    function onDeleteHostedGame(username: string) {
       console.log(username + ' deleted hosted game')
-      supabase.from('game_list_games').delete().eq('hostUsername', username).select<'id', GameListGame>('id').then(({ data, error, }) => {
+      supabase.from('game_list_games').delete().eq('hostUsername', username).select<'id', GameListGame>('id').then(({ data, error }) => {
         if (error) {
           console.error(error)
           return
@@ -119,9 +105,8 @@ app.prepare().then(async () => {
         if (index !== -1) games.splice(index, 1)
         socket.leave(username)
       })
-    })
-
-    socket.on(signals.client.joinGame, (hostUsername: string, username: string) => {
+    }
+    function onJoinGame(hostUsername: string, username: string) {
       console.log(username + ' joined game hosted by ' + hostUsername)
       const game = games.find(g => g.hostUsername === hostUsername)
       if (game) {
@@ -130,16 +115,15 @@ app.prepare().then(async () => {
 
         io.to(hostUsername).emit(signals.server.gameJoined, game)
 
-        supabase.from('game_list_games').delete().eq('hostUsername', hostUsername).select<'id', GameListGame>('id').then(({ data, error, }) => {
+        supabase.from('game_list_games').delete().eq('hostUsername', hostUsername).select<'id', GameListGame>('id').then(({ data, error }) => {
           if (error) {
             console.error(error)
             return
           }
         })
       } else console.error('game not found')
-    })
-
-    socket.on(signals.client.checkForActiveGame, (username: string) => {
+    }
+    function onCheckForActiveGame(username: string) {
       // console.log('checked for active game: ' + username)
       const game = games.find(g => g.hostUsername === username || g.challengerUsername === username)
       if (game && !isGameOver(game)) {
@@ -148,9 +132,8 @@ app.prepare().then(async () => {
         socket.join(game.hostUsername)
         socket.emit(signals.server.activeGameFound, game.hostUsername)
       }
-    })
-
-    socket.on(signals.client.getRefresh, (hostUsername: string) => {
+    }
+    function onGetRefresh(hostUsername: string) {
       // console.log('refresh requested for: ' + hostUsername)
       const game = games.find(g => g.hostUsername === hostUsername)
       if (game) {
@@ -158,9 +141,8 @@ app.prepare().then(async () => {
         // because of this, we cannot emit the game object directly
         socket.emit(signals.server.sentRefresh, game.currentWord, game.isHostsTurn, game.hostTime, game.startTime, game.endTime, game.wordHistory)
       }
-    })
-
-    socket.on(signals.client.startGame, () => {
+    }
+    function onStartGame() {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       if (game?.hasGameStarted) return
       if (game) {
@@ -192,9 +174,9 @@ app.prepare().then(async () => {
           io.to(game.hostUsername).emit(signals.server.timeUpdated, game.hostTime)
         }, 20)
       }
-    })
-
-    socket.on(signals.client.inputMove, (move) => {
+    }
+    // used to process added letters to current word
+    function onInputMove(move: string) {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       let suggestedWord: string | undefined
       // console.log(game)
@@ -220,7 +202,7 @@ app.prepare().then(async () => {
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
             valid: false,
-            suggestions: getRandomArrElements(possibleSuggestions, 3),
+            suggestions: getRandomArrElements(possibleSuggestions, 3)
           })
 
           // for testing where turn always changes
@@ -237,9 +219,9 @@ app.prepare().then(async () => {
         }
         io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, isValid, suggestedWord)
       }
-    })
-
-    socket.on(signals.client.inputWord, () => {
+    }
+    // used to process fully entered word
+    function onInputWord() {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       if (game) {
         if (game.isBeingPenalized || game.isBeingRewarded || game.currentWord.length < 4) return
@@ -254,7 +236,7 @@ app.prepare().then(async () => {
             word: game.currentWord,
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
-            valid: true,
+            valid: true
           })
 
           game.isHostsTurn = !game.isHostsTurn
@@ -282,7 +264,7 @@ app.prepare().then(async () => {
             time: Date.now() - game.startTime,
             player: game.isHostsTurn ? 'host' : 'challenger',
             valid: false,
-            suggestions: getRandomArrElements(possibleSuggestions, 3),
+            suggestions: getRandomArrElements(possibleSuggestions, 3)
           })
 
           io.to(game.hostUsername).emit(signals.server.wordUpdated, game.currentWord, game.isHostsTurn, false, suggestedWord)
@@ -295,9 +277,8 @@ app.prepare().then(async () => {
 
         }
       }
-    })
-
-    socket.on(signals.client.getAnalysis, () => {
+    }
+    function onGetAnalysis() {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       if (game) {
         if (!game.endTime || !game.startTime) {
@@ -306,9 +287,8 @@ app.prepare().then(async () => {
         }
         io.to(game.hostUsername).emit(signals.server.analysisSent, game.wordHistory, game.endTime - game.startTime)
       }
-    })
-
-    socket.on(signals.client.requestRematch, () => {
+    }
+    function onRequestRematch() {
       const roomName = Array.from(socket.rooms).find(r => r !== socket.id)
       if (!roomName) return
 
@@ -319,9 +299,8 @@ app.prepare().then(async () => {
       if (!otherSocketId) return
 
       io.to(otherSocketId).emit(signals.server.rematchRequested)
-    })
-
-    socket.on(signals.client.acceptRematch, () => {
+    }
+    function onAcceptRematch() {
       const game = games.find(g => socket.rooms.has(g.hostUsername))
       if (game) {
         game.rematchCount++
@@ -337,11 +316,10 @@ app.prepare().then(async () => {
 
         io.to(game.hostUsername).emit(signals.server.gameReset, game)
       }
-    })
-
-    socket.on(signals.client.leaveGame, async (hostUsername: string) => {
+    }
+    function onLeaveGame(hostUsername: string) {
       console.log(socket.id + ' left game hosted by ' + hostUsername)
-      await socket.leave(hostUsername)
+      socket.leave(hostUsername)
       const room = io.sockets.adapter.rooms.get(hostUsername)
       if (room?.size === 0) {
         const game = games.find(g => g.hostUsername === hostUsername)
@@ -349,9 +327,9 @@ app.prepare().then(async () => {
           games.splice(games.indexOf(game), 1)
         }
       }
-    })
+    }
 
-    socket.on('disconnecting', () => {
+    function onDisconnecting() {
       // can still access the socket.rooms property here
       // console.log('socket rooms:', socket.rooms)
 
@@ -362,7 +340,7 @@ app.prepare().then(async () => {
       const game = games.find(g => g.hostUsername === roomName)
       // checks to make sure the game is not yet joined (joining removes the game from the list on its own)
       if (game && !game.challengerUsername) {
-        supabase.from('game_list_games').delete().eq('hostUsername', roomName).select<'id', GameListGame>('id').then(({ data, error, }) => {
+        supabase.from('game_list_games').delete().eq('hostUsername', roomName).select<'id', GameListGame>('id').then(({ data, error }) => {
           if (error) {
             console.error(error)
             return
@@ -387,21 +365,30 @@ app.prepare().then(async () => {
         // console.log('other socket:', otherSocket)
         io.to(otherSocket).emit(signals.server.opponentDisconnected)
       }
-    })
-    socket.on('disconnect', () => {
+    }
+    function onDisconnect() {
       // can't access the socket.rooms property here (the rooms have been left already)
       console.log(socket.id + ' disconnected')
-    })
+    }
+
+    socket.on(signals.client.hostGame, onHostGame)
+    socket.on(signals.client.deleteHostedGame, onDeleteHostedGame)
+    socket.on(signals.client.joinGame, onJoinGame)
+    socket.on(signals.client.checkForActiveGame, onCheckForActiveGame)
+    socket.on(signals.client.getRefresh, onGetRefresh)
+    socket.on(signals.client.startGame, onStartGame)
+    socket.on(signals.client.inputMove, onInputMove)
+    socket.on(signals.client.inputWord, onInputWord)
+    socket.on(signals.client.getAnalysis, onGetAnalysis)
+    socket.on(signals.client.requestRematch, onRequestRematch)
+    socket.on(signals.client.acceptRematch, onAcceptRematch)
+    socket.on(signals.client.leaveGame, onLeaveGame)
+
+    socket.on('disconnecting', onDisconnecting)
+    socket.on('disconnect', onDisconnect)
   })
 
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`)
   })
 })
-
-function getPossibleWords(word: string): string[] {
-  return wordList.filter(w => w.startsWith(word))
-}
-function isGameOver(game: TuggrGame): boolean {
-  return game.hostTime <= 0 || game.hostTime >= game.time * 2
-}

@@ -8,7 +8,7 @@ const GameSelection = () => {
   const QUICK_PLAY = 'quick-play'
   const LOBBY = 'lobby'
 
-  const [selectedTab, setSelectedTab,] = React.useState(QUICK_PLAY)
+  const [selectedTab, setSelectedTab] = React.useState(QUICK_PLAY)
 
   return (
     <div className='flex-1 h-full border-r'>

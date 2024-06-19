@@ -1,13 +1,13 @@
-import { AuthContext, } from '@/app/auth/AuthProvider'
+import { AuthContext } from '@/app/auth/AuthProvider'
 import signals from '@/app/constants/strings/signals'
 import socket from '@/app/socket'
-import { AuthUser, } from '@/app/types/AuthUser'
-import { HostGameArgs, } from '@/app/types/HostGameArgs'
-import { ensureUser, } from '@/utils/supabase/client'
-import React, { useContext, useEffect, useRef, } from 'react'
+import { AuthUser } from '@/app/types/AuthUser'
+import { HostGameArgs } from '@/app/types/HostGameArgs'
+import { ensureUser } from '@/utils/supabase/client'
+import React, { useContext, useEffect, useRef } from 'react'
 
 const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
-  const { user, setUser, } = useContext(AuthContext)
+  const { user, setUser } = useContext(AuthContext)
   user?.user_metadata
   const ref = useRef<HTMLDialogElement>(null)
 
@@ -17,7 +17,7 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
     return () => {
       dialog?.removeEventListener('close', props.onModalClose)
     }
-  }, [props.onModalClose,])
+  }, [props.onModalClose])
 
   function handleCancel() {
     const modal = document.getElementById(props.id) as HTMLDialogElement
@@ -29,7 +29,7 @@ const HostGameModal = (props: { id: string, onModalClose: () => void }) => {
     const hostGameArgs: HostGameArgs = {
       hostDisplayName: ensuredUser.user_metadata.display_name as string,
       rating: ensuredUser.user_metadata.rating as number,
-      timeControl: parseInt((document.getElementById('host-time-control') as HTMLSelectElement).value),
+      timeControl: parseInt((document.getElementById('host-time-control') as HTMLSelectElement).value)
     }
     // console.log('hostGameArgs:', hostGameArgs)
     socket.emit(signals.client.hostGame, hostGameArgs)

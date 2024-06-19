@@ -1,8 +1,8 @@
-import { Inter, } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import AuthProvider from './auth/AuthProvider'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin',], })
+const inter = Inter({ subsets: ['latin'] })
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -12,11 +12,11 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata = {
   metadataBase: new URL(defaultUrl),
   title: 'tuggr',
-  description: 'collaborative word-building fun',
+  description: 'collaborative word-building fun'
 }
 
 export default function RootLayout({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) {

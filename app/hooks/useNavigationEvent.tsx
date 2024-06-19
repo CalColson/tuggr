@@ -1,7 +1,7 @@
 'use client'
 
-import { usePathname, } from 'next/navigation'
-import { useEffect, useRef, } from 'react'
+import { usePathname } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import socket from '../socket'
 import signals from '../constants/strings/signals'
 
@@ -29,5 +29,5 @@ export const useNavigationEvent = (onPathnameChange: () => void) => {
       // Update REF
       savedPathNameRef.current = pathname
     }
-  }, [pathname, onPathnameChange,])
+  }, [pathname, onPathnameChange])
 }
